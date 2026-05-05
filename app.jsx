@@ -12,12 +12,13 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "cooldownDays": 0,
   "cooldownHours": 0,
   "cooldownMinutes": 0,
-  "ringRadius": 230,
-  "idleSpeed": 8,
-  "sparkCount": 18,
+  "ringRadius": 290,
+  "idleSpeed": 22,
+  "sparkCount": 22,
   "openCrossfade": 450,
   "shakeIntensity": 45,
-  "mapDefaultOpen": false
+  "mapDefaultOpen": false,
+  "audioEnabled": true
 }/*EDITMODE-END*/;
 
 const ROLE_OPTIONS = [
@@ -170,6 +171,14 @@ function App() {
             value={tweaks.shakeIntensity}
             min={20} max={60} step={1} unit="°"
             onChange={(v) => setTweak('shakeIntensity', v)}
+          />
+        </TweakSection>
+
+        <TweakSection label="Audio">
+          <TweakToggle
+            label="Sound + haptics"
+            value={tweaks.audioEnabled}
+            onChange={(v) => setTweak('audioEnabled', v)}
           />
         </TweakSection>
 

@@ -5,7 +5,7 @@ const ROLES = [
   { id: 'GUEST',                 label: 'GUEST',                   maxIdx: -1, word: null },
   { id: 'EXPLORILLS',            label: 'EXPLORILLS',              maxIdx:  1, word: 'RENDRILLS' },
   { id: 'RENDRILLS',             label: 'RENDRILLS',               maxIdx:  2, word: 'PROMDRILLS' },
-  { id: 'PROMDRILLS',            label: 'PROMDRILLS',               maxIdx:  3, word: 'CHRONICLES' },
+  { id: 'PROMDRILLS',            label: 'PROMDRILLS',              maxIdx:  3, word: 'CHRONICLES' },
   { id: 'PROMDRILLS_CHRONICLES', label: 'PROMDRILLS · CHRONICLES', maxIdx:  4, word: null },
 ];
 const ROLE_BY_ID = Object.fromEntries(ROLES.map((r) => [r.id, r]));
@@ -17,6 +17,10 @@ const CHESTS = [
   { id: 'legendary', label: 'LEGENDARY', imgClosed: 'assets/legendary.png', imgOpen: 'assets/legendary_open.png', glow: '#f59e0b', prize: 'EXPLORILLS GENESIS ART', requires: 'PROMDRILLS' },
   { id: 'mythic',    label: 'MYTHIC',    imgClosed: 'assets/mythic.png',    imgOpen: 'assets/mythic_open.png',    glow: '#ef4444', prize: 'EXPLORILLS GRAND PRIZE', requires: 'PROMDRILLS · CHRONICLES' },
 ];
+
+const sfx = (name) => {
+  if (window.OneBoxAudio && !window.OneBoxAudio.isMuted()) window.OneBoxAudio.play(name);
+};
 
 function uniqueLetters(word) {
   if (!word) return [];
@@ -44,17 +48,25 @@ function OneBox({ tweaks }) {
   const [ringAngle, setRingAngle] = useState(0);
   const [opens, setOpens] = useState(0);
   const [mapOpen, setMapOpen] = useState(false);
+  const [claimFlying, setClaimFlying] = useState(false);
 
   const stateRef = useRef({ angle: 0 });
   const spinTargetRef = useRef(null);
   const pillRef = useRef(null);
-  const prizeRef = useRef(null);
+  const prizeGemRef = useRef(null);
+  const prizeNameRef = useRef(null);
+  const lastTickRef = useRef(0);
 
   useEffect(() => { if (tweaks.mapDefaultOpen) setMapOpen(true); }, []); // eslint-disable-line
 
+  // Audio mute sync
+  useEffect(() => {
+    if (window.OneBoxAudio) window.OneBoxAudio.setMuted(!tweaks.audioEnabled);
+  }, [tweaks.audioEnabled]);
+
   const SLOT_DEG = 360 / CHESTS.length;
-  const idleSpeed = tweaks.idleSpeed ?? 8;
-  const ringZ = `${tweaks.ringRadius ?? 230}px`;
+  const idleSpeed = tweaks.idleSpeed ?? 22;
+  const ringZ = `${tweaks.ringRadius ?? 290}px`;
 
   const phaseOverride = tweaks.phaseOverride || 'AUTO';
   const overrideToPhase = {
@@ -90,6 +102,7 @@ function OneBox({ tweaks }) {
   const isSpinTarget = phase === 'spinning' && phaseOverride === 'AUTO';
   const isOverrideSpin = phaseOverride === 'SPINNING';
 
+  // Idle drift
   useEffect(() => {
     if (!isIdleDrift) return;
     let raf;
@@ -104,13 +117,14 @@ function OneBox({ tweaks }) {
     return () => cancelAnimationFrame(raf);
   }, [isIdleDrift, idleSpeed]);
 
+  // Override spin
   useEffect(() => {
     if (!isOverrideSpin) return;
     let raf;
     let last = performance.now();
     const tick = (now) => {
       const dt = (now - last) / 1000; last = now;
-      stateRef.current.angle = (stateRef.current.angle + 280 * dt) % 360;
+      stateRef.current.angle = (stateRef.current.angle + 320 * dt) % 360;
       setRingAngle(stateRef.current.angle);
       raf = requestAnimationFrame(tick);
     };
@@ -127,6 +141,7 @@ function OneBox({ tweaks }) {
     setRingAngle(target);
   }, [phaseOverride, overrideWinnerIdx, SLOT_DEG]);
 
+  // Spin-to-target (with setTimeout backup so headless / stalled RAF still finishes)
   useEffect(() => {
     if (!isSpinTarget || !spinTargetRef.current) return;
     const { startAngle, totalDelta, totalDuration, chosen } = spinTargetRef.current;
@@ -138,15 +153,21 @@ function OneBox({ tweaks }) {
       const a = startAngle + totalDelta * ease(t);
       stateRef.current.angle = a;
       setRingAngle(a);
+      // tick sound at every quarter-turn
+      const turn = Math.floor(a / 30);
+      if (turn !== lastTickRef.current && t < 0.92) {
+        lastTickRef.current = turn;
+        sfx('tick');
+      }
       if (t < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    // Backup timer: phase transitions even if RAF stalls (e.g. headless)
     const timer = setTimeout(() => {
       stateRef.current.angle = startAngle + totalDelta;
       setRingAngle(stateRef.current.angle);
       setWinnerIdx(chosen);
       setPhase('stopped');
+      sfx('settle');
     }, totalDuration + 30);
     return () => {
       cancelAnimationFrame(raf);
@@ -154,8 +175,11 @@ function OneBox({ tweaks }) {
     };
   }, [isSpinTarget]);
 
+  // Spin trigger
   const spin = useCallback(() => {
     if (phase !== 'idle' || cooldownActive || phaseOverride !== 'AUTO') return;
+    if (window.OneBoxAudio) window.OneBoxAudio.unlock();
+    sfx('spinPress');
     setMapOpen(false);
     setWinnerIdx(null);
 
@@ -181,15 +205,22 @@ function OneBox({ tweaks }) {
     setPhase('spinning');
   }, [phase, cooldownActive, phaseOverride, tweaks.spinOutcome, SLOT_DEG]);
 
+  // Phase progression
   useEffect(() => {
     if (phaseOverride !== 'AUTO') return;
     if (phase === 'stopped') {
       const isLocked = winnerIdx != null && winnerIdx > userMaxIdx;
-      const t = setTimeout(() => setPhase(isLocked ? 'shaking-locked' : 'shaking'), 400);
+      const t = setTimeout(() => {
+        setPhase(isLocked ? 'shaking-locked' : 'shaking');
+        sfx(isLocked ? 'lock' : 'spinPress');
+      }, 350);
       return () => clearTimeout(t);
     }
     if (phase === 'shaking') {
-      const t = setTimeout(() => setPhase('opening'), 700);
+      const t = setTimeout(() => {
+        setPhase('opening');
+        sfx('win');
+      }, 600);
       return () => clearTimeout(t);
     }
     if (phase === 'opening') {
@@ -208,28 +239,41 @@ function OneBox({ tweaks }) {
         setPhase('idle');
         setWinnerIdx(null);
         setOpens((n) => n + 1);
-      }, 600);
+        sfx('close');
+      }, 700);
       return () => clearTimeout(t);
     }
   }, [phase, phaseOverride, winnerIdx, userMaxIdx]);
 
+  // Claim flow
   const onClaim = useCallback(() => {
     if (phaseOverride !== 'AUTO') return;
+    sfx('claim');
     const pill = pillRef.current;
-    const prize = prizeRef.current;
-    if (pill && prize) {
-      const pr = pill.getBoundingClientRect();
-      const zr = prize.getBoundingClientRect();
-      const dx = pr.left + pr.width / 2 - (zr.left + zr.width / 2);
-      const dy = pr.top + pr.height / 2 - (zr.top + zr.height / 2);
-      prize.style.setProperty('--target-x', `${dx}px`);
-      prize.style.setProperty('--target-y', `${dy}px`);
-    }
+    [prizeGemRef.current, prizeNameRef.current].forEach((node) => {
+      if (!node) return;
+      if (pill) {
+        const pr = pill.getBoundingClientRect();
+        const zr = node.getBoundingClientRect();
+        const dx = pr.left + pr.width / 2 - (zr.left + zr.width / 2);
+        const dy = pr.top + pr.height / 2 - (zr.top + zr.height / 2);
+        node.style.setProperty('--target-x', `${dx}px`);
+        node.style.setProperty('--target-y', `${dy}px`);
+      } else {
+        // No pill (guest fallback) — fly upward off-screen
+        node.style.setProperty('--target-x', `0px`);
+        node.style.setProperty('--target-y', `-200px`);
+      }
+    });
+    setClaimFlying(true);
     setPhase('claiming');
-    const t = setTimeout(() => setPhase('closing'), 700);
-    return () => clearTimeout(t);
+    setTimeout(() => {
+      setClaimFlying(false);
+      setPhase('closing');
+    }, 750);
   }, [phaseOverride]);
 
+  // Letter slots
   const word = role.word;
   const wordUnique = useMemo(() => uniqueLetters(word), [word]);
   const collectedCount = Math.max(0, Math.min(tweaks.collectedCount ?? 0, wordUnique.length));
@@ -256,16 +300,16 @@ function OneBox({ tweaks }) {
 
   const sparks = useMemo(() => {
     const out = [];
-    const count = tweaks.sparkCount ?? 18;
+    const count = tweaks.sparkCount ?? 22;
     for (let i = 0; i < count; i++) {
-      const a = (i / count) * Math.PI * 2 + Math.random() * 0.4;
-      const dist = 80 + Math.random() * 90;
+      const a = (i / count) * Math.PI * 2 + Math.random() * 0.5;
+      const dist = 90 + Math.random() * 110;
       out.push({
         x: Math.cos(a) * dist,
-        y: Math.sin(a) * dist - 40,
-        delay: Math.random() * 250,
-        dur: 900 + Math.random() * 500,
-        size: 4 + Math.random() * 5,
+        y: Math.sin(a) * dist - 50,
+        delay: Math.random() * 280,
+        dur: 950 + Math.random() * 600,
+        size: 4 + Math.random() * 6,
       });
     }
     return out;
@@ -277,8 +321,8 @@ function OneBox({ tweaks }) {
     renderPhase === 'spinning-override' && 'is-override-spin',
     (['stopped', 'shaking', 'opening', 'revealed', 'claiming', 'shaking-locked', 'closing'].includes(renderPhase)) && 'is-revealing',
     renderPhase === 'shaking' && 'is-shaking',
-    (renderPhase === 'opening' || renderPhase === 'revealed' || renderPhase === 'claiming') && 'is-opening',
-    renderPhase === 'revealed' && 'is-revealed',
+    renderPhase === 'opening' && 'is-opening',
+    (renderPhase === 'revealed' || renderPhase === 'claiming') && 'is-revealed',
     renderPhase === 'shaking-locked' && 'is-shaking-locked',
     renderPhase === 'claiming' && 'is-claiming',
     renderPhase === 'closing' && 'is-closing',
@@ -348,6 +392,7 @@ function OneBox({ tweaks }) {
             const isWinner = i === renderWinnerIdx;
             const isFront = i === frontIdx;
             const isLockedSlot = isWinner && isLockedReveal && ['stopped', 'shaking-locked'].includes(renderPhase);
+            const showWinnerPrize = isWinner && showPrize;
             return (
               <div
                 key={c.id}
@@ -361,7 +406,7 @@ function OneBox({ tweaks }) {
                   '--slot-angle': i * SLOT_DEG,
                   '--chest-glow': c.glow,
                   zIndex: isWinner ? 50 : Math.round(100 + Math.cos(((ringAngle + i * SLOT_DEG) * Math.PI) / 180) * 10),
-                  opacity: 0.35 + 0.65 * (Math.cos(((ringAngle + i * SLOT_DEG) * Math.PI) / 180) * 0.5 + 0.5),
+                  opacity: 0.40 + 0.60 * (Math.cos(((ringAngle + i * SLOT_DEG) * Math.PI) / 180) * 0.5 + 0.5),
                 }}
               >
                 <div className="chest-billboard">
@@ -385,8 +430,15 @@ function OneBox({ tweaks }) {
                   <div className="chest-stack">
                     <img className="chest chest-closed" src={c.imgClosed} alt={c.label} draggable={false} />
                     <img className="chest chest-open" src={c.imgOpen} alt="" draggable={false} />
+                    <div className="open-flash" aria-hidden="true" />
                   </div>
-                  <div className="chest-shadow" />
+
+                  {showWinnerPrize && (
+                    /* Prize GEM emerging from chest mouth (layer 2) */
+                    <div className="prize-gem-mount" ref={prizeGemRef} style={{ '--gem-color': c.glow }}>
+                      <div className="prize-gem" />
+                    </div>
+                  )}
 
                   {isLockedSlot && (
                     <div className="lock-overlay">
@@ -401,22 +453,22 @@ function OneBox({ tweaks }) {
                     </div>
                   )}
 
-                  <div className="chest-label">{c.label}</div>
+                  {/* Always-visible gamified label */}
+                  <div className="chest-tag" style={{ '--c': c.glow }}>{c.label}</div>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {showPrize && (
+        {showPrize && winnerChest && (
           <div
-            ref={prizeRef}
-            className="prize-reveal"
+            className={`prize-name-banner ${renderPhase === 'claiming' ? 'is-flying' : ''}`}
+            ref={prizeNameRef}
             style={{ '--gem-color': winnerChest.glow }}
             aria-live="polite"
           >
-            <div className="prize-name">{winnerChest.prize}</div>
-            <div className="prize-gem" />
+            {winnerChest.prize}
           </div>
         )}
 

@@ -41,7 +41,7 @@ button { font-family: inherit; }
 }
 
 /* ============================================================
-   Tier progress bar — always visible at top
+   Tier progress bar
    ============================================================ */
 .tier-progress {
   grid-area: progress;
@@ -61,7 +61,7 @@ button { font-family: inherit; }
 }
 
 /* ============================================================
-   Top bar — user pill + map toggle
+   Top bar
    ============================================================ */
 .top-bar {
   grid-area: topbar;
@@ -92,10 +92,7 @@ button { font-family: inherit; }
   -webkit-backdrop-filter: blur(6px);
   box-shadow: 0 4px 16px color-mix(in oklab, var(--accent) 12%, transparent);
 }
-.user-pill .user-name {
-  color: var(--fg);
-  letter-spacing: 0.06em;
-}
+.user-pill .user-name { color: var(--fg); letter-spacing: 0.06em; }
 .user-pill .user-dot {
   display: inline-block;
   width: 5px; height: 5px;
@@ -108,11 +105,6 @@ button { font-family: inherit; }
   filter: drop-shadow(0 0 6px color-mix(in oklab, var(--accent) 50%, transparent));
   letter-spacing: 0.12em;
   font-size: 11px;
-}
-.user-pill.is-guest-pill {
-  border-color: var(--border);
-  color: var(--fg-muted);
-  box-shadow: none;
 }
 
 .map-toggle {
@@ -147,7 +139,7 @@ button { font-family: inherit; }
 }
 
 /* ============================================================
-   Letter slots row
+   Letter slots
    ============================================================ */
 .letter-row {
   grid-area: letters;
@@ -182,7 +174,6 @@ button { font-family: inherit; }
   background: color-mix(in oklab, var(--bg-card) 60%, transparent);
   border: 1px solid var(--border);
   border-radius: 5px;
-  letter-spacing: 0;
   transition: color 250ms, border-color 250ms, background 250ms, box-shadow 250ms;
 }
 .letter-slot.is-revealed {
@@ -206,7 +197,7 @@ button { font-family: inherit; }
 .stage.is-guest .letter-row { display: none; }
 
 /* ============================================================
-   Map overlay — frosted card over arena
+   Map overlay
    ============================================================ */
 .map-overlay {
   position: absolute;
@@ -221,10 +212,7 @@ button { font-family: inherit; }
   padding: 16px;
   animation: map-fade 220ms var(--ease-expo-out);
 }
-@keyframes map-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+@keyframes map-fade { from { opacity: 0; } to { opacity: 1; } }
 .map-card {
   width: min(420px, 100%);
   max-height: 100%;
@@ -273,7 +261,6 @@ button { font-family: inherit; }
 .map-body {
   display: flex;
   flex-direction: column;
-  gap: 0;
   overflow-y: auto;
   padding: 4px 0;
 }
@@ -282,28 +269,11 @@ button { font-family: inherit; }
   border-bottom: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
 }
 .map-tier:last-of-type { border-bottom: 0; }
-.map-tier.is-current {
-  background: color-mix(in oklab, var(--accent) 8%, transparent);
-}
-.map-tier-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.map-tier-name {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  color: var(--fg);
-}
+.map-tier.is-current { background: color-mix(in oklab, var(--accent) 8%, transparent); }
+.map-tier-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.map-tier-name { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; color: var(--fg); }
 .map-tier.is-current .map-tier-name { color: var(--accent); }
-.map-tier-sub {
-  font-size: 10px;
-  color: var(--fg-muted);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
+.map-tier-sub { font-size: 10px; color: var(--fg-muted); letter-spacing: 0.12em; text-transform: uppercase; }
 .map-tier-badge {
   margin-left: auto;
   font-size: 9px;
@@ -314,11 +284,7 @@ button { font-family: inherit; }
   color: white;
   font-weight: 700;
 }
-.map-tier-body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
+.map-tier-body { display: flex; flex-direction: column; gap: 4px; }
 .map-row {
   display: flex;
   align-items: center;
@@ -366,9 +332,7 @@ button { font-family: inherit; }
   border-top: 1px solid var(--border);
 }
 
-/* When map is open, dim the arena underneath */
 .stage.is-map-open .arena .ring,
-.stage.is-map-open .prize-reveal,
 .stage.is-map-open .lock-chip {
   filter: blur(2px) saturate(0.8);
   opacity: 0.4;
@@ -376,7 +340,7 @@ button { font-family: inherit; }
 }
 
 /* ============================================================
-   Carousel arena — 3D ring of chests
+   Carousel arena
    ============================================================ */
 .arena {
   grid-area: arena;
@@ -384,31 +348,32 @@ button { font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
-  perspective: 900px;
+  perspective: 1100px;
   perspective-origin: 50% 55%;
-  overflow: hidden;
+  overflow: visible;
   min-height: 0;
 }
 
 .ring {
   position: relative;
-  width: clamp(260px, 78vw, 520px);
+  width: clamp(280px, 80vw, 560px);
   height: clamp(180px, 50vw, 320px);
   transform-style: preserve-3d;
   transform: rotateX(8deg) rotateY(var(--ring-angle, 0deg));
   will-change: transform;
 }
 
+/* Floor halo */
 .ring::after {
   content: '';
   position: absolute;
   left: 50%; top: 100%;
-  width: 120%; height: 80px;
+  width: 130%; height: 90px;
   transform: translate(-50%, -50%) rotateX(90deg);
   background: radial-gradient(closest-side, color-mix(in oklab, var(--accent) 32%, transparent), transparent 70%);
-  filter: blur(18px);
+  filter: blur(20px);
   z-index: -1;
-  opacity: 0.8;
+  opacity: 0.85;
   pointer-events: none;
 }
 
@@ -422,7 +387,7 @@ button { font-family: inherit; }
   transform-style: preserve-3d;
   transform:
     rotateY(calc(var(--slot-angle) * 1deg))
-    translateZ(var(--ring-z, 220px))
+    translateZ(var(--ring-z, 290px))
     rotateY(calc(var(--slot-angle) * -1deg - var(--ring-angle, 0deg)));
   transition: filter 400ms var(--ease-expo-out), opacity 400ms var(--ease-expo-out);
 }
@@ -436,16 +401,12 @@ button { font-family: inherit; }
   pointer-events: auto;
 }
 
+/* Stack: closed + open imagery, both bottom-anchored so opening "lifts" up */
 .chest-stack {
   position: relative;
   width: 100%;
-  height: auto;
-  transform-origin: 50% 80%;
-  animation: chest-bob 4.2s ease-in-out infinite;
-}
-@keyframes chest-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  /* No bobbing — chests stay at the same vertical level */
+  transform-origin: 50% 100%;
 }
 
 .chest {
@@ -453,72 +414,109 @@ button { font-family: inherit; }
   width: 100%;
   height: auto;
   filter:
-    drop-shadow(0 14px 22px rgb(0 0 0 / 0.55))
-    drop-shadow(0 0 24px color-mix(in oklab, var(--chest-glow, var(--accent)) 35%, transparent));
+    drop-shadow(0 12px 18px rgb(0 0 0 / 0.55))
+    drop-shadow(0 0 22px color-mix(in oklab, var(--chest-glow, var(--accent)) 30%, transparent));
 }
-.chest-closed { position: relative; }
+.chest-closed {
+  position: relative;
+  z-index: 2;
+  transform-origin: 50% 100%;
+  transition: opacity 280ms var(--ease-expo-out), transform 280ms var(--ease-expo-out);
+}
 .chest-open {
   position: absolute;
-  top: 0; left: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
   opacity: 0;
-  transition: opacity var(--open-crossfade, 450ms) var(--ease-expo-out);
+  z-index: 3;
+  transform-origin: 50% 100%;
+  transform: scaleY(0.55);
+  pointer-events: none;
 }
 
-/* During opening / revealed / claiming → swap to open image */
-.ring.is-opening .slot.is-winner .chest-open,
-.ring.is-revealed .slot.is-winner .chest-open,
-.ring.is-claiming .slot.is-winner .chest-open {
-  opacity: 1;
-}
-.ring.is-opening .slot.is-winner .chest-closed,
-.ring.is-revealed .slot.is-winner .chest-closed,
-.ring.is-claiming .slot.is-winner .chest-closed {
+/* White flash overlay that masks the closed→open swap */
+.open-flash {
+  position: absolute;
+  left: 50%;
+  bottom: 30%;
+  width: 130%;
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, 50%) scale(0);
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(255,255,255,0.95) 0%,
+    rgba(255,255,255,0.7) 25%,
+    color-mix(in oklab, var(--chest-glow, var(--accent)) 70%, transparent) 60%,
+    transparent 80%);
   opacity: 0;
-  transition: opacity var(--open-crossfade, 450ms) var(--ease-expo-out);
+  pointer-events: none;
+  mix-blend-mode: screen;
+  z-index: 4;
 }
-/* Closing: reverse — closed back to visible */
+
+/* OPENING transformation — the gamified core */
+.ring.is-opening .slot.is-winner .chest-closed {
+  animation: closed-shrink 420ms var(--ease-expo-out) forwards;
+}
+@keyframes closed-shrink {
+  0%   { opacity: 1; transform: scaleY(1); filter: brightness(1); }
+  40%  { opacity: 1; transform: scaleY(0.8) translateY(8%); filter: brightness(2.2); }
+  60%  { opacity: 0; transform: scaleY(0.6) translateY(15%); filter: brightness(3); }
+  100% { opacity: 0; transform: scaleY(0.6) translateY(15%); filter: brightness(1); }
+}
+
+.ring.is-opening .slot.is-winner .chest-open {
+  animation: lid-pop 700ms cubic-bezier(0.2, 1.2, 0.3, 1.05) 350ms forwards;
+}
+@keyframes lid-pop {
+  0%   { opacity: 0; transform: scaleY(0.55); }
+  20%  { opacity: 1; }
+  60%  { opacity: 1; transform: scaleY(1.08) translateY(-3%); }
+  100% { opacity: 1; transform: scaleY(1) translateY(0); }
+}
+
+.ring.is-opening .slot.is-winner .open-flash {
+  animation: flash-burst 700ms ease-out 220ms forwards;
+}
+@keyframes flash-burst {
+  0%   { opacity: 0; transform: translate(-50%, 50%) scale(0); }
+  30%  { opacity: 1; transform: translate(-50%, 50%) scale(0.9); }
+  100% { opacity: 0; transform: translate(-50%, 50%) scale(2.2); }
+}
+
+/* REVEALED — hold open state */
+.ring.is-revealed .slot.is-winner .chest-closed { opacity: 0; transform: scaleY(0.6) translateY(15%); }
+.ring.is-revealed .slot.is-winner .chest-open { opacity: 1; transform: scaleY(1); }
+
+/* CLAIMING — held open */
+.ring.is-claiming .slot.is-winner .chest-closed { opacity: 0; }
+.ring.is-claiming .slot.is-winner .chest-open { opacity: 1; }
+
+/* CLOSING — open shrinks back, closed pops back, small flash */
 .ring.is-closing .slot.is-winner .chest-open {
-  opacity: 0;
-  transition: opacity 280ms var(--ease-expo-out);
+  animation: lid-close 300ms var(--ease-expo-out) forwards;
+}
+@keyframes lid-close {
+  0%   { opacity: 1; transform: scaleY(1); }
+  100% { opacity: 0; transform: scaleY(0.55); }
 }
 .ring.is-closing .slot.is-winner .chest-closed {
-  opacity: 1;
-  transition: opacity 280ms var(--ease-expo-out);
+  animation: closed-restore 360ms cubic-bezier(0.2, 1.2, 0.3, 1.05) 120ms forwards;
+}
+@keyframes closed-restore {
+  0%   { opacity: 0; transform: scaleY(0.6) translateY(15%); }
+  60%  { opacity: 1; transform: scaleY(1.06) translateY(-2%); }
+  100% { opacity: 1; transform: scaleY(1) translateY(0); }
+}
+.ring.is-closing .slot.is-winner .open-flash {
+  animation: flash-burst 360ms ease-out forwards;
+  opacity: 0.6;
 }
 
-/* Chest under-shadow */
-.chest-shadow {
-  position: absolute;
-  bottom: -6px;
-  left: 50%;
-  width: 70%;
-  height: 14%;
-  transform: translateX(-50%);
-  background: radial-gradient(ellipse at center, rgb(0 0 0 / 0.65), transparent 65%);
-  filter: blur(4px);
-  z-index: -1;
-}
-
-/* Rarity label below front chest only — hidden on winner */
-.chest-label {
-  position: absolute;
-  bottom: -38px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--chest-glow, var(--fg-muted));
-  font-weight: 700;
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 300ms var(--ease-expo-out);
-  text-shadow: 0 0 8px color-mix(in oklab, var(--chest-glow, var(--accent)) 50%, transparent);
-}
-.slot.is-front .chest-label { opacity: 1; }
-.ring.is-spinning .chest-label { opacity: 0; }
+/* Spinning state — disable transitions for fluid rotation */
 .ring.is-spinning .slot { transition: none; }
-.ring.is-revealing .slot.is-winner .chest-label { opacity: 0; }
 
 /* When stopped on a chest: hide non-winners */
 .ring.is-revealing .slot:not(.is-winner) {
@@ -527,25 +525,25 @@ button { font-family: inherit; }
   transition: opacity 600ms ease, filter 600ms ease;
 }
 
-/* Winner rises into focus (eligible only — locked stays in place) */
+/* Winner rises into focus (eligible) */
 .ring.is-revealing:not(.is-shaking-locked) .slot.is-winner .chest-stack {
   animation: winner-rise 700ms var(--ease-expo-out) forwards;
 }
 @keyframes winner-rise {
   0%   { transform: scale(1) translateY(0); }
-  100% { transform: scale(1.35) translateY(-8%); }
+  100% { transform: scale(1.32) translateY(-6%); }
 }
 
-/* Shaking pre-open (eligible) */
+/* Shake before opening */
 .ring.is-shaking .slot.is-winner .chest-stack {
-  animation: chest-shake 90ms ease-in-out infinite, winner-rise 700ms var(--ease-expo-out) forwards;
+  animation: chest-shake 80ms ease-in-out 6, winner-rise 700ms var(--ease-expo-out) forwards;
 }
 @keyframes chest-shake {
-  0% { transform: translate(-1px, 0) rotate(-1.2deg) scale(1.35); }
-  25% { transform: translate(2px, -1px) rotate(1.5deg) scale(1.35); }
-  50% { transform: translate(-2px, 1px) rotate(-1.2deg) scale(1.35); }
-  75% { transform: translate(1px, 0) rotate(1deg) scale(1.35); }
-  100% { transform: translate(0, 0) rotate(0) scale(1.35); }
+  0% { transform: translate(-2px, 0) rotate(-1.5deg) scale(1.32) translateY(-6%); }
+  25% { transform: translate(2.5px, -1px) rotate(2deg) scale(1.32) translateY(-6%); }
+  50% { transform: translate(-2.5px, 1px) rotate(-1.5deg) scale(1.32) translateY(-6%); }
+  75% { transform: translate(2px, 0) rotate(1.5deg) scale(1.32) translateY(-6%); }
+  100% { transform: translate(0, 0) rotate(0) scale(1.32) translateY(-6%); }
 }
 
 /* Locked-shake — hard rotate ±45° */
@@ -553,39 +551,66 @@ button { font-family: inherit; }
   animation: chest-lock-shake 1500ms cubic-bezier(0.36, 0, 0.66, 1) forwards;
 }
 @keyframes chest-lock-shake {
-  0%   { transform: rotate(0deg) scale(1.2); }
-  10%  { transform: rotate(calc(var(--shake-intensity, 45deg) * -1)) scale(1.2); }
-  25%  { transform: rotate(var(--shake-intensity, 45deg)) scale(1.2); }
-  40%  { transform: rotate(calc(var(--shake-intensity, 45deg) * -1)) scale(1.2); }
-  55%  { transform: rotate(var(--shake-intensity, 45deg)) scale(1.2); }
-  70%  { transform: rotate(calc(var(--shake-intensity, 45deg) * -0.5)) scale(1.2); }
-  85%  { transform: rotate(calc(var(--shake-intensity, 45deg) * 0.25)) scale(1.2); }
-  100% { transform: rotate(0deg) scale(1.2); }
-}
-
-/* Opening — light burst on chest stack (separate from cross-fade) */
-.ring.is-opening .slot.is-winner .chest-stack {
-  animation: chest-burst 600ms var(--ease-expo-out) forwards;
-}
-@keyframes chest-burst {
-  0%   { transform: scale(1.35) translateY(-8%); filter: brightness(1); }
-  40%  { transform: scale(1.45) translateY(-10%); filter: brightness(1.4) saturate(1.4); }
-  100% { transform: scale(1.4)  translateY(-8%); filter: brightness(1.1) saturate(1.2); }
-}
-.ring.is-revealed .slot.is-winner .chest-stack,
-.ring.is-claiming .slot.is-winner .chest-stack {
-  transform: scale(1.4) translateY(-8%);
-}
-.ring.is-closing .slot.is-winner .chest-stack {
-  animation: winner-fall 500ms var(--ease-expo-out) forwards;
-}
-@keyframes winner-fall {
-  0%   { transform: scale(1.4) translateY(-8%); }
-  100% { transform: scale(1) translateY(0); }
+  0%   { transform: rotate(0deg) scale(1.18); }
+  10%  { transform: rotate(calc(var(--shake-intensity, 45deg) * -1)) scale(1.18); }
+  25%  { transform: rotate(var(--shake-intensity, 45deg)) scale(1.18); }
+  40%  { transform: rotate(calc(var(--shake-intensity, 45deg) * -1)) scale(1.18); }
+  55%  { transform: rotate(var(--shake-intensity, 45deg)) scale(1.18); }
+  70%  { transform: rotate(calc(var(--shake-intensity, 45deg) * -0.5)) scale(1.18); }
+  85%  { transform: rotate(calc(var(--shake-intensity, 45deg) * 0.25)) scale(1.18); }
+  100% { transform: rotate(0deg) scale(1.18); }
 }
 
 /* ============================================================
-   Lock overlay — frosted layer on locked chest
+   Always-visible gamified chest tag
+   ============================================================ */
+.chest-tag {
+  position: absolute;
+  left: 50%;
+  bottom: -22px;
+  transform: translateX(-50%);
+  font-size: clamp(8px, 2.2vw, 10px);
+  letter-spacing: 0.22em;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: white;
+  white-space: nowrap;
+  padding: 4px 12px 5px;
+  background: linear-gradient(180deg,
+    color-mix(in oklab, var(--c, var(--accent)) 80%, black) 0%,
+    color-mix(in oklab, var(--c, var(--accent)) 60%, black) 100%);
+  border: 1px solid color-mix(in oklab, var(--c, var(--accent)) 90%, white 30%);
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, white 18%, transparent) inset,
+    0 4px 12px color-mix(in oklab, var(--c, var(--accent)) 35%, transparent),
+    0 0 18px color-mix(in oklab, var(--c, var(--accent)) 40%, transparent);
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.5), 0 0 6px color-mix(in oklab, var(--c, var(--accent)) 80%, white);
+  z-index: 6;
+  pointer-events: none;
+}
+/* Notched corners — gamified frame look */
+.chest-tag::before,
+.chest-tag::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 6px; height: 6px;
+  background: var(--c, var(--accent));
+  border: 1px solid color-mix(in oklab, white 30%, transparent);
+  transform: translateY(-50%) rotate(45deg);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--c, var(--accent)) 60%, transparent);
+}
+.chest-tag::before { left: -4px; }
+.chest-tag::after { right: -4px; }
+
+/* Hide tag during spinning to avoid blur smear */
+.ring.is-spinning .chest-tag { opacity: 0; transition: opacity 200ms; }
+/* Hide non-winner tags when revealing */
+.ring.is-revealing .slot:not(.is-winner) .chest-tag { opacity: 0; }
+
+/* ============================================================
+   Lock overlay (frosted on locked chest)
    ============================================================ */
 .lock-overlay {
   position: absolute;
@@ -612,7 +637,6 @@ button { font-family: inherit; }
   to { opacity: 1; transform: scale(1); }
 }
 
-/* CSS-drawn lock icon */
 .lock-icon {
   position: relative;
   width: 32px; height: 38px;
@@ -664,9 +688,6 @@ button { font-family: inherit; }
   text-shadow: 0 0 12px rgba(255,255,255,0.45);
 }
 
-/* ============================================================
-   Lock chip — gem-style notification under locked chest
-   ============================================================ */
 .lock-chip {
   position: absolute;
   left: 50%;
@@ -686,9 +707,7 @@ button { font-family: inherit; }
   text-transform: uppercase;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.06) inset,
-    0 12px 32px rgba(0,0,0,0.45);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.45);
   z-index: 20;
   animation: lock-chip-in 320ms 380ms var(--ease-expo-out) backwards;
 }
@@ -696,7 +715,7 @@ button { font-family: inherit; }
 .lock-chip-icon {
   width: 14px; height: 14px;
   border-radius: 4px;
-  background: linear-gradient(135deg, color-mix(in oklab, white 30%, var(--accent)) 0%, var(--accent) 100%);
+  background: linear-gradient(135deg, color-mix(in oklab, white 30%, var(--accent)), var(--accent));
   position: relative;
   box-shadow: 0 0 10px color-mix(in oklab, var(--accent) 60%, transparent);
 }
@@ -733,20 +752,21 @@ button { font-family: inherit; }
   opacity: 0;
   pointer-events: none;
   mix-blend-mode: screen;
+  z-index: 1;
 }
 .ring.is-opening .slot.is-winner .light-beam {
-  animation: beam-up 1100ms var(--ease-expo-out) forwards;
+  animation: beam-up 1100ms var(--ease-expo-out) 200ms forwards;
 }
 @keyframes beam-up {
   0% { opacity: 0; transform: translateX(-50%) scaleY(0.2); }
-  35% { opacity: 0.8; }
+  35% { opacity: 0.85; }
   100% { opacity: 0; transform: translateX(-50%) scaleY(1.3); }
 }
 
 .floor-flash {
   position: absolute;
-  left: 50%; top: 75%;
-  width: 200%; height: 80px;
+  left: 50%; top: 78%;
+  width: 220%; height: 90px;
   transform: translate(-50%, -50%);
   border-radius: 999px;
   background: radial-gradient(closest-side,
@@ -756,6 +776,7 @@ button { font-family: inherit; }
   opacity: 0;
   pointer-events: none;
   mix-blend-mode: screen;
+  z-index: 1;
 }
 .ring.is-opening .slot.is-winner .floor-flash {
   animation: floor-flash 900ms ease-out forwards;
@@ -763,20 +784,20 @@ button { font-family: inherit; }
 @keyframes floor-flash {
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
   20%  { opacity: 0.95; }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.7); }
 }
 
-/* Sparks */
 .spark {
   position: absolute;
-  left: 50%; top: 50%;
+  left: 50%; top: 55%;
   width: 6px; height: 6px;
   border-radius: 999px;
   background: color-mix(in oklab, var(--chest-glow, var(--accent)) 60%, white);
-  box-shadow: 0 0 8px color-mix(in oklab, var(--chest-glow, var(--accent)) 70%, white);
+  box-shadow: 0 0 10px color-mix(in oklab, var(--chest-glow, var(--accent)) 70%, white);
   opacity: 0;
   pointer-events: none;
   mix-blend-mode: screen;
+  z-index: 8;
 }
 .ring.is-opening .slot.is-winner .spark {
   animation: spark-out var(--spark-dur, 1100ms) ease-out forwards;
@@ -789,82 +810,114 @@ button { font-family: inherit; }
 }
 
 /* ============================================================
-   Prize reveal — gem placeholder + name above winning chest
+   Prize: NAME (above chest) and GEM (inside chest mouth, layer 2)
    ============================================================ */
-.prize-reveal {
+
+/* Name banner — sits at arena top center (above the carousel) */
+.prize-name-banner {
   position: absolute;
   left: 50%;
-  top: 14%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  pointer-events: none;
-  z-index: 35;
-  opacity: 0;
-  animation: prize-emerge 700ms 200ms var(--ease-expo-out) forwards;
-}
-@keyframes prize-emerge {
-  0%   { opacity: 0; transform: translate(-50%, calc(-50% + 30%)) scale(0.6); }
-  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-}
-
-.prize-name {
-  font-size: clamp(13px, 3.4vw, 17px);
+  top: 6%;
+  transform: translate(-50%, 0);
+  font-size: clamp(12px, 3vw, 14px);
   font-weight: 800;
-  letter-spacing: 0.06em;
-  color: var(--fg);
+  letter-spacing: 0.1em;
+  color: white;
   text-align: center;
   white-space: nowrap;
   text-transform: uppercase;
-  font-feature-settings: 'tnum' 1;
-  padding: 5px 14px;
-  background: color-mix(in oklab, var(--bg-card) 88%, transparent);
-  border: 1px solid color-mix(in oklab, var(--gem-color, var(--accent)) 60%, var(--border));
+  padding: 6px 16px;
+  background: color-mix(in oklab, var(--bg-card) 90%, transparent);
+  border: 1px solid color-mix(in oklab, var(--gem-color, var(--accent)) 70%, var(--border));
   border-radius: 999px;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--gem-color, var(--accent)) 30%, transparent) inset,
-    0 0 18px color-mix(in oklab, var(--gem-color, var(--accent)) 50%, transparent);
+    0 6px 18px rgba(0,0,0,0.45),
+    0 0 22px color-mix(in oklab, var(--gem-color, var(--accent)) 50%, transparent);
+  pointer-events: none;
+  z-index: 35;
+  opacity: 0;
+  animation: prize-name-in 500ms var(--ease-expo-out) 600ms forwards;
+}
+.prize-name-banner.is-flying {
+  animation: prize-fly 700ms var(--ease-expo-out) forwards;
+}
+@keyframes prize-name-in {
+  0%   { opacity: 0; transform: translate(-50%, -16px) scale(0.85); }
+  100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+/* Gem mount — inside chest mouth, anchored to chest body */
+.prize-gem-mount {
+  position: absolute;
+  left: 50%;
+  bottom: 38%;  /* roughly the chest mouth opening on open-state image */
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 9;  /* above chest images (z 2-3), below sparks (z 8 absolute, but sparks have higher) */
+  opacity: 0;
+  animation: prize-gem-rise 850ms cubic-bezier(0.2, 1.3, 0.3, 1.05) 600ms forwards;
+}
+@keyframes prize-gem-rise {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(60%) scale(0.3); }
+  20%  { opacity: 1; }
+  60%  { transform: translateX(-50%) translateY(-12%) scale(1.08); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 }
 
 .prize-gem {
-  width: clamp(48px, 11vw, 64px);
-  aspect-ratio: 1 / 1;
+  width: clamp(36px, 9vw, 52px);
+  aspect-ratio: 1 / 1.05;
   background:
-    radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95), rgba(255,255,255,0.2) 35%, transparent 60%),
+    radial-gradient(circle at 35% 28%, rgba(255,255,255,0.95), rgba(255,255,255,0.25) 30%, transparent 55%),
     linear-gradient(155deg,
       color-mix(in oklab, var(--gem-color, var(--accent)) 80%, white) 0%,
       var(--gem-color, var(--accent)) 50%,
-      color-mix(in oklab, var(--gem-color, var(--accent)) 60%, black) 100%);
-  clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
-  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.5)) drop-shadow(0 0 22px var(--gem-color, var(--accent)));
-  animation: gem-spin 5s linear infinite;
+      color-mix(in oklab, var(--gem-color, var(--accent)) 65%, black) 100%);
+  clip-path: polygon(50% 0%, 100% 35%, 82% 100%, 18% 100%, 0% 35%);
+  filter:
+    drop-shadow(0 6px 12px rgba(0,0,0,0.55))
+    drop-shadow(0 0 18px var(--gem-color, var(--accent)));
+  animation: gem-bob 2.6s ease-in-out infinite 1500ms;
 }
-@keyframes gem-spin {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(2deg) scale(1.05); }
+@keyframes gem-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-3px) rotate(2deg); }
 }
 
-/* Claim — fly to user pill (uses :has() to detect sibling ring state) */
-.arena:has(.ring.is-claiming) .prize-reveal {
-  animation: prize-fly 700ms var(--ease-expo-out) forwards;
+/* Claim — both name + gem fly to user pill */
+.ring.is-claiming .slot.is-winner .prize-gem-mount {
+  animation: prize-fly-gem 700ms var(--ease-expo-out) forwards;
 }
 @keyframes prize-fly {
-  0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  85%  { opacity: 0.9; }
+  0%   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  90%  { opacity: 0.9; }
   100% {
     opacity: 0;
     transform:
-      translate(calc(-50% + var(--target-x, 0px)), calc(-50% + var(--target-y, 0px)))
+      translate(calc(-50% + var(--target-x, 0px)), var(--target-y, -200px))
       scale(0.18);
   }
 }
+@keyframes prize-fly-gem {
+  0%   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  90%  { opacity: 0.9; }
+  100% {
+    opacity: 0;
+    transform:
+      translateX(calc(-50% + var(--target-x, 0px)))
+      translateY(var(--target-y, -200px))
+      scale(0.15);
+  }
+}
+
+/* During closing, gem is gone (banner is removed in JSX via showPrize gating) */
+.ring.is-closing .prize-gem-mount { opacity: 0; }
 
 /* ============================================================
-   Bottom controls — main button
+   Bottom controls
    ============================================================ */
 .controls {
   grid-area: controls;
@@ -938,7 +991,6 @@ button { font-family: inherit; }
 }
 @keyframes spin-icon { to { transform: rotate(360deg); } }
 
-/* Variants */
 .main-btn.is-claim {
   background:
     linear-gradient(180deg, color-mix(in oklab, var(--chest-glow) 100%, transparent), color-mix(in oklab, var(--chest-glow) 80%, black)),
@@ -964,10 +1016,22 @@ button { font-family: inherit; }
 /* ============================================================
    Mobile portrait tightening
    ============================================================ */
-@media (max-width: 420px) {
+@media (max-width: 480px) {
+  .arena { perspective: 800px; }
+  .ring {
+    width: clamp(260px, 88vw, 360px);
+    height: clamp(160px, 52vw, 240px);
+  }
+  .slot {
+    width: clamp(120px, 36vw, 180px);
+    height: clamp(120px, 36vw, 180px);
+    margin-left: calc(clamp(120px, 36vw, 180px) / -2);
+    margin-top:  calc(clamp(120px, 36vw, 180px) / -2);
+  }
   .user-pill { font-size: 11px; padding: 5px 9px; gap: 6px; }
   .user-pill .user-role { font-size: 10px; }
   .map-toggle { padding: 5px 9px; font-size: 10px; gap: 4px; }
+  .chest-tag { font-size: 9px; padding: 3px 9px 4px; }
   .map-row {
     flex-direction: column;
     align-items: stretch;
@@ -979,29 +1043,30 @@ button { font-family: inherit; }
     padding-left: 18px;
     color: var(--c, var(--fg-muted));
     opacity: 0.85;
-    font-size: 10px;
   }
 }
 
 @media (max-height: 700px) {
   .top-bar { padding-top: 8px; }
-  .letter-row { padding-bottom: 0; }
+  .letter-row { padding-bottom: 0; gap: 4px; }
   .controls { padding-bottom: 12px; }
+  .chest-tag { bottom: -18px; }
 }
 
 @media (min-width: 768px) {
-  .ring { width: clamp(420px, 60vmin, 620px); }
+  .ring { width: clamp(440px, 62vmin, 660px); }
   .top-bar { padding-top: 18px; }
   .letter-slots { gap: 8px; }
 }
 
 @media (min-width: 1200px) {
-  .ring { width: 640px; }
+  .ring { width: 660px; }
 }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .chest-stack, .ring, .prize-gem, .lock-chip, .map-card, .map-overlay {
+  .ring, .prize-gem, .prize-name, .lock-chip, .map-card, .map-overlay,
+  .chest-closed, .chest-open, .open-flash {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
