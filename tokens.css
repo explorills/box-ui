@@ -1,0 +1,243 @@
+/* =============================================================
+   EXPL.ONE — Foundation Tokens
+   Lifted from explorills/main-landing (src/styles/theme.css, src/index.css),
+   then locked to the EXPL.ONE neutral system.
+
+   The neutral scale is the PRIMARY palette across every surface in
+   every project. Per-product accents exist (see §2) but are used
+   minimally — on the word "one" in a logo/title, a dot in the nav,
+   a thin modal frame, an inline hint. Never as page backgrounds,
+   button fills, large blocks, or atmosphere. The ecosystem reads
+   as one cohesive neutral system; project identity is a whisper.
+   ============================================================= */
+
+/* ---- 0. Brand font — Space Grotesk (variable) ----------------- */
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('fonts/SpaceGrotesk-VariableFont_wght.ttf') format('truetype-variations'),
+       url('fonts/SpaceGrotesk-VariableFont_wght.ttf') format('truetype');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---- 1. Neutrals — THE LOCK ----------------------------------
+   Cool-shifted, hue 265 with chroma 0.02. These eight values are
+   the entire base palette of the ONE ecosystem. No other neutrals,
+   no purple infusion in the scale itself. Do not invent shades.
+----------------------------------------------------------------- */
+:root {
+  --bg-inset:       #000000;                /* deepest — page edge / overlays */
+  --bg-header:      oklch(0.12 0.02 265);   /* fixed top nav */
+  --bg:             oklch(0.15 0.02 265);   /* page */
+  --bg-card:        oklch(0.18 0.02 265);   /* raised surface */
+  --bg-secondary:   oklch(0.22 0.02 265);   /* inputs, chips, secondary fill */
+  --border:         oklch(0.25 0.02 265);   /* lines, dividers */
+  --fg-muted:       oklch(0.65 0.02 265);   /* secondary text */
+  --fg:             oklch(0.98 0 0);        /* primary text */
+
+  /* Aliases kept for compatibility with existing components ----- */
+  --bg-muted:       var(--bg-secondary);
+  --border-strong:  var(--border);
+  --input:          var(--border);
+  --fg-on-accent:   var(--fg);
+
+  /* States — used sparingly, semantic only ---------------------- */
+  --destructive:    oklch(0.577 0.245 27.325);
+  --warning:        oklch(0.75 0.19 75);
+  --success:        oklch(0.65 0.20 145);
+
+  /* -------- 2. Per-project accents (USE MINIMALLY) -------------
+     Each project in the ONE ecosystem carries its own brand accent.
+     The accent applies to the PROJECT NAME word in a lockup
+     (one CHAIN — "CHAIN" in blue), a single status dot, a thin
+     modal frame — never large surfaces. The rest of every UI is
+     locked neutrals.
+
+     --accent defaults to the ONE ecosystem purple (the main
+     project's accent). Inside a specific project, override
+     --accent on a wrapping element.
+  ------------------------------------------------------------ */
+  --accent:           #a147e1;              /* ONE ecosystem itself */
+  --accent-hover:     oklch(0.68 0.24 295);
+  --accent-muted:     oklch(0.62 0.24 295 / 0.15);
+  --ring:             var(--accent);
+
+  --accent-ecosystem: #a147e1;   /* purple — ONE ecosystem (main) */
+  --accent-chain:     #2563eb;   /* blue   — one CHAIN */
+  --accent-network:   #2563eb;   /* blue   — one NETWORK */
+  --accent-pump:      #16a34a;   /* green  — one PUMP */
+  --accent-world:     #ec4899;   /* pink   — one WORLD */
+  --accent-chat:      #dfdfdf;   /* light  — one CHAT */
+  --accent-deal:      #06b6d4;   /* cyan   — one DEAL */
+  --accent-box:       #7c3aed;   /* violet — one BOX */
+  --accent-id:        #92400e;   /* bronze — one ID */
+  --accent-agent:     #dc2626;   /* red    — one AGENT */
+  --accent-venture:   #facc15;   /* yellow — one VENTURE */
+  --accent-care:      #64748b;   /* slate  — one CARE */
+  --accent-space:     #84cc16;   /* lime   — one SPACE */
+  --accent-nodes:     #a147e1;   /* purple — EXPL nodes (sibling, lowercase n) */
+
+  /* -------- 3. Typography -------------------------------------- */
+  --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system,
+               "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+               "Liberation Mono", "Courier New", monospace;
+  --font-display: var(--font-sans);
+
+  --text-xs:   0.75rem;   /* 12 */
+  --text-sm:   0.875rem;  /* 14 */
+  --text-base: 1rem;      /* 16 */
+  --text-lg:   1.125rem;  /* 18 */
+  --text-xl:   1.25rem;   /* 20 */
+  --text-2xl:  1.5rem;    /* 24 */
+  --text-3xl:  1.875rem;  /* 30 */
+  --text-4xl:  2.25rem;   /* 36 */
+  --text-5xl:  3rem;      /* 48 */
+  --text-6xl:  3.75rem;   /* 60 */
+  --text-7xl:  4.5rem;    /* 72 */
+
+  --leading-tight:  1.1;
+  --leading-snug:   1.25;
+  --leading-normal: 1.5;
+  --leading-loose:  1.75;
+
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-semi:    600;
+  --weight-bold:    700;
+
+  /* -------- 4. Spacing ----------------------------------------- */
+  --size-0-5: 0.125rem;
+  --size-1:   0.25rem;
+  --size-2:   0.5rem;
+  --size-3:   0.75rem;
+  --size-4:   1rem;
+  --size-5:   1.25rem;
+  --size-6:   1.5rem;
+  --size-8:   2rem;
+  --size-10:  2.5rem;
+  --size-12:  3rem;
+  --size-16:  4rem;
+  --size-20:  5rem;
+  --size-24:  6rem;
+  --size-32:  8rem;
+
+  /* -------- 5. Radii ------------------------------------------- */
+  --radius:      0.5rem;
+  --radius-sm:   calc(var(--radius) * 0.5);
+  --radius-md:   var(--radius);
+  --radius-lg:   calc(var(--radius) * 1.5);
+  --radius-xl:   calc(var(--radius) * 2);
+  --radius-2xl:  calc(var(--radius) * 3);
+  --radius-full: 9999px;
+
+  /* -------- 6. Elevation / glow -------------------------------
+     Glow stays available, but apply ONLY to the small accent
+     elements (the "one" word, a single dot). Never to bulk UI.
+  ------------------------------------------------------------ */
+  --glow-accent-soft:   drop-shadow(0 0 12px oklch(0.62 0.24 295 / 0.6));
+  --glow-accent-strong: drop-shadow(0 0 20px oklch(0.62 0.24 295 / 0.8));
+  --shadow-card:        0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.25);
+  --shadow-overlay:     0 24px 64px rgb(0 0 0 / 0.5);
+
+  /* -------- 7. Motion ------------------------------------------ */
+  --ease-expo-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast:   150ms;
+  --dur-med:    300ms;
+  --dur-slow:   600ms;
+}
+
+/* =============================================================
+   SEMANTIC TYPE STYLES
+   ============================================================= */
+
+.h1 {
+  font-family: var(--font-sans);
+  font-size: clamp(var(--text-4xl), 6vw, var(--text-7xl));
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+
+.h2 {
+  font-family: var(--font-sans);
+  font-size: clamp(var(--text-3xl), 4vw, var(--text-5xl));
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.015em;
+  color: var(--fg);
+}
+
+.h3 {
+  font-family: var(--font-sans);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semi);
+  line-height: var(--leading-snug);
+  color: var(--fg);
+}
+
+.h4 {
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semi);
+  line-height: var(--leading-snug);
+  color: var(--fg);
+}
+
+.p, p {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-normal);
+  color: var(--fg);
+}
+
+.p-muted { color: var(--fg-muted); }
+
+.small {
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+}
+
+.code, code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--bg-secondary);
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-sm);
+  color: var(--fg);
+}
+
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semi);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+/* The project-name word — the only place the accent should bloom.
+   Lockup is: one <span class="project-name">CHAIN</span>
+   The word "one" is always neutral foreground; the project name
+   itself carries the accent and a soft glow. Inside a project,
+   override --accent on an ancestor and this element automatically
+   picks up that project's color.
+
+   For "ONE ecosystem" specifically, the accented word is "ecosystem"
+   (the main project's distinguishing name); --accent defaults to
+   purple, so .project-name on "ecosystem" lights up purple. */
+.project-name {
+  color: var(--accent);
+  filter: drop-shadow(0 0 10px color-mix(in oklab, var(--accent) 60%, transparent));
+  font-weight: 700;
+}
+
+/* Legacy alias — same behavior. */
+.accent-glow {
+  color: var(--accent);
+  filter: var(--glow-accent-soft);
+}
