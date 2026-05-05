@@ -1,5 +1,5 @@
 /* one BOX — interactive frontend */
-@import url('tokens.css');
+@import url('styles/tokens.css');
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -20,7 +20,7 @@ html, body, #root {
 button { font-family: inherit; }
 
 /* ============================================================
-   Stage — fixed-viewport, no scroll, mobile-first
+   Stage layout — fixed viewport, no scroll, mobile-first
    ============================================================ */
 .stage {
   position: fixed;
@@ -127,11 +127,7 @@ button { font-family: inherit; }
   color: var(--fg);
   border-color: color-mix(in oklab, var(--accent) 40%, var(--border));
 }
-.map-toggle .caret {
-  font-size: 9px;
-  line-height: 1;
-  transition: transform 250ms var(--ease-expo-out);
-}
+.map-toggle .caret { font-size: 9px; line-height: 1; transition: transform 250ms var(--ease-expo-out); }
 .map-toggle.is-open .caret { transform: rotate(180deg); }
 .map-toggle.is-open {
   color: var(--accent);
@@ -185,9 +181,7 @@ button { font-family: inherit; }
     0 0 0 1px color-mix(in oklab, var(--accent) 30%, transparent) inset,
     0 0 12px color-mix(in oklab, var(--accent) 30%, transparent);
 }
-.letter-slot.is-pulsing {
-  animation: letter-pulse 700ms ease-out 2;
-}
+.letter-slot.is-pulsing { animation: letter-pulse 700ms ease-out 2; }
 @keyframes letter-pulse {
   0%   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 60%, transparent); transform: scale(1); }
   50%  { box-shadow: 0 0 18px 6px color-mix(in oklab, var(--accent) 40%, transparent); transform: scale(1.08); }
@@ -233,37 +227,21 @@ button { font-family: inherit; }
   to { transform: translateY(0) scale(1); opacity: 1; }
 }
 .map-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
 }
 .map-head h3 {
-  margin: 0;
-  font-size: 12px;
-  letter-spacing: 0.22em;
-  font-weight: 700;
-  color: var(--fg-muted);
+  margin: 0; font-size: 12px; letter-spacing: 0.22em;
+  font-weight: 700; color: var(--fg-muted);
 }
 .map-close {
-  appearance: none;
-  width: 24px; height: 24px;
-  border: 0;
-  background: transparent;
-  color: var(--fg-muted);
-  font-size: 14px;
-  cursor: pointer;
-  border-radius: 6px;
+  appearance: none; width: 24px; height: 24px;
+  border: 0; background: transparent; color: var(--fg-muted);
+  font-size: 14px; cursor: pointer; border-radius: 6px;
   transition: background 200ms, color 200ms;
 }
 .map-close:hover { background: var(--bg-secondary); color: var(--fg); }
-.map-body {
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  padding: 4px 0;
-}
+.map-body { display: flex; flex-direction: column; overflow-y: auto; padding: 4px 0; }
 .map-tier {
   padding: 12px 16px;
   border-bottom: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
@@ -286,49 +264,30 @@ button { font-family: inherit; }
 }
 .map-tier-body { display: flex; flex-direction: column; gap: 4px; }
 .map-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  padding: 4px 8px;
-  border-radius: 6px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; font-size: 11px; letter-spacing: 0.06em;
+  padding: 4px 8px; border-radius: 6px;
 }
 .map-chest {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--fg);
-  text-transform: uppercase;
-  flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-weight: 700; letter-spacing: 0.12em; color: var(--fg);
+  text-transform: uppercase; flex-shrink: 0;
 }
 .map-swatch {
-  width: 8px; height: 8px;
-  border-radius: 2px;
+  width: 8px; height: 8px; border-radius: 2px;
   background: var(--c);
   box-shadow: 0 0 8px color-mix(in oklab, var(--c) 70%, transparent);
   flex-shrink: 0;
 }
 .map-prize {
-  color: var(--fg-muted);
-  text-transform: uppercase;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-align: right;
-  line-height: 1.3;
-  flex: 1 1 0;
-  min-width: 0;
-  word-break: break-word;
+  color: var(--fg-muted); text-transform: uppercase;
+  font-size: 10px; letter-spacing: 0.08em;
+  text-align: right; line-height: 1.3;
+  flex: 1 1 0; min-width: 0; word-break: break-word;
 }
 .map-foot {
-  padding: 10px 16px;
-  text-align: center;
-  font-size: 9px;
-  letter-spacing: 0.22em;
-  color: var(--fg-muted);
+  padding: 10px 16px; text-align: center;
+  font-size: 9px; letter-spacing: 0.22em; color: var(--fg-muted);
   border-top: 1px solid var(--border);
 }
 
@@ -340,7 +299,8 @@ button { font-family: inherit; }
 }
 
 /* ============================================================
-   Carousel arena
+   Carousel arena — perspective LOOKING UP at the ring
+   (front chests sit lower in view, back chests rise above)
    ============================================================ */
 .arena {
   grid-area: arena;
@@ -349,31 +309,31 @@ button { font-family: inherit; }
   align-items: center;
   justify-content: center;
   perspective: 1100px;
-  perspective-origin: 50% 55%;
+  perspective-origin: 50% 45%;  /* origin slightly above center → looking up */
   overflow: visible;
   min-height: 0;
 }
 
 .ring {
   position: relative;
-  width: clamp(280px, 80vw, 560px);
-  height: clamp(180px, 50vw, 320px);
+  width: clamp(280px, 90vw, 600px);
+  height: clamp(170px, 48vw, 300px);
   transform-style: preserve-3d;
-  transform: rotateX(8deg) rotateY(var(--ring-angle, 0deg));
+  transform: rotateX(-10deg) rotateY(var(--ring-angle, 0deg));  /* negative = looking up */
   will-change: transform;
 }
 
-/* Floor halo */
+/* Halo flipped: now appears as a luminous ceiling above the ring */
 .ring::after {
   content: '';
   position: absolute;
-  left: 50%; top: 100%;
+  left: 50%; top: -10%;
   width: 130%; height: 90px;
-  transform: translate(-50%, -50%) rotateX(90deg);
-  background: radial-gradient(closest-side, color-mix(in oklab, var(--accent) 32%, transparent), transparent 70%);
+  transform: translate(-50%, -50%) rotateX(-90deg);
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--accent) 22%, transparent), transparent 70%);
   filter: blur(20px);
   z-index: -1;
-  opacity: 0.85;
+  opacity: 0.7;
   pointer-events: none;
 }
 
@@ -385,27 +345,24 @@ button { font-family: inherit; }
   margin-left: calc(clamp(140px, 36vw, 220px) / -2);
   margin-top:  calc(clamp(140px, 36vw, 220px) / -2);
   transform-style: preserve-3d;
+  /* Effective ring radius: cap by viewport so all 5 chests stay on-screen */
+  --ring-z-applied: min(var(--ring-z, 290px), 30vw);
   transform:
     rotateY(calc(var(--slot-angle) * 1deg))
-    translateZ(var(--ring-z, 290px))
+    translateZ(var(--ring-z-applied))
     rotateY(calc(var(--slot-angle) * -1deg - var(--ring-angle, 0deg)));
   transition: filter 400ms var(--ease-expo-out), opacity 400ms var(--ease-expo-out);
 }
 
 .chest-billboard {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  position: absolute; inset: 0;
+  display: flex; align-items: flex-end; justify-content: center;
   pointer-events: auto;
 }
 
-/* Stack: closed + open imagery, both bottom-anchored so opening "lifts" up */
 .chest-stack {
   position: relative;
   width: 100%;
-  /* No bobbing — chests stay at the same vertical level */
   transform-origin: 50% 100%;
 }
 
@@ -425,8 +382,7 @@ button { font-family: inherit; }
 }
 .chest-open {
   position: absolute;
-  bottom: 0;
-  left: 0;
+  bottom: 0; left: 0;
   width: 100%;
   height: auto;
   opacity: 0;
@@ -436,13 +392,11 @@ button { font-family: inherit; }
   pointer-events: none;
 }
 
-/* White flash overlay that masks the closed→open swap */
+/* White flash mask */
 .open-flash {
   position: absolute;
-  left: 50%;
-  bottom: 30%;
-  width: 130%;
-  aspect-ratio: 1 / 1;
+  left: 50%; bottom: 30%;
+  width: 130%; aspect-ratio: 1 / 1;
   transform: translate(-50%, 50%) scale(0);
   border-radius: 50%;
   background: radial-gradient(circle,
@@ -456,7 +410,7 @@ button { font-family: inherit; }
   z-index: 4;
 }
 
-/* OPENING transformation — the gamified core */
+/* OPENING transformation — gamified core */
 .ring.is-opening .slot.is-winner .chest-closed {
   animation: closed-shrink 420ms var(--ease-expo-out) forwards;
 }
@@ -466,7 +420,6 @@ button { font-family: inherit; }
   60%  { opacity: 0; transform: scaleY(0.6) translateY(15%); filter: brightness(3); }
   100% { opacity: 0; transform: scaleY(0.6) translateY(15%); filter: brightness(1); }
 }
-
 .ring.is-opening .slot.is-winner .chest-open {
   animation: lid-pop 700ms cubic-bezier(0.2, 1.2, 0.3, 1.05) 350ms forwards;
 }
@@ -476,7 +429,6 @@ button { font-family: inherit; }
   60%  { opacity: 1; transform: scaleY(1.08) translateY(-3%); }
   100% { opacity: 1; transform: scaleY(1) translateY(0); }
 }
-
 .ring.is-opening .slot.is-winner .open-flash {
   animation: flash-burst 700ms ease-out 220ms forwards;
 }
@@ -486,15 +438,13 @@ button { font-family: inherit; }
   100% { opacity: 0; transform: translate(-50%, 50%) scale(2.2); }
 }
 
-/* REVEALED — hold open state */
-.ring.is-revealed .slot.is-winner .chest-closed { opacity: 0; transform: scaleY(0.6) translateY(15%); }
-.ring.is-revealed .slot.is-winner .chest-open { opacity: 1; transform: scaleY(1); }
+/* REVEALED + CLAIMING — hold open state */
+.ring.is-revealed .slot.is-winner .chest-closed,
+.ring.is-claiming .slot.is-winner .chest-closed { opacity: 0; transform: scaleY(0.6) translateY(15%); }
+.ring.is-revealed .slot.is-winner .chest-open,
+.ring.is-claiming .slot.is-winner .chest-open { opacity: 1; transform: scaleY(1); }
 
-/* CLAIMING — held open */
-.ring.is-claiming .slot.is-winner .chest-closed { opacity: 0; }
-.ring.is-claiming .slot.is-winner .chest-open { opacity: 1; }
-
-/* CLOSING — open shrinks back, closed pops back, small flash */
+/* CLOSING — open shrinks, closed pops back, soft flash */
 .ring.is-closing .slot.is-winner .chest-open {
   animation: lid-close 300ms var(--ease-expo-out) forwards;
 }
@@ -518,7 +468,7 @@ button { font-family: inherit; }
 /* Spinning state — disable transitions for fluid rotation */
 .ring.is-spinning .slot { transition: none; }
 
-/* When stopped on a chest: hide non-winners */
+/* When stopped on a chest: fade non-winners (revealed/locked etc.) */
 .ring.is-revealing .slot:not(.is-winner) {
   opacity: 0.05 !important;
   filter: blur(3px) saturate(0.3);
@@ -534,7 +484,7 @@ button { font-family: inherit; }
   100% { transform: scale(1.32) translateY(-6%); }
 }
 
-/* Shake before opening */
+/* Pre-open shake (eligible) */
 .ring.is-shaking .slot.is-winner .chest-stack {
   animation: chest-shake 80ms ease-in-out 6, winner-rise 700ms var(--ease-expo-out) forwards;
 }
@@ -546,27 +496,32 @@ button { font-family: inherit; }
   100% { transform: translate(0, 0) rotate(0) scale(1.32) translateY(-6%); }
 }
 
-/* Locked-shake — hard rotate ±45° */
+/* Locked-shake — gentle ±10° (default; tweakable via --shake-intensity) */
 .ring.is-shaking-locked .slot.is-winner .chest-stack {
   animation: chest-lock-shake 1500ms cubic-bezier(0.36, 0, 0.66, 1) forwards;
 }
 @keyframes chest-lock-shake {
   0%   { transform: rotate(0deg) scale(1.18); }
-  10%  { transform: rotate(calc(var(--shake-intensity, 45deg) * -1)) scale(1.18); }
-  25%  { transform: rotate(var(--shake-intensity, 45deg)) scale(1.18); }
-  40%  { transform: rotate(calc(var(--shake-intensity, 45deg) * -1)) scale(1.18); }
-  55%  { transform: rotate(var(--shake-intensity, 45deg)) scale(1.18); }
-  70%  { transform: rotate(calc(var(--shake-intensity, 45deg) * -0.5)) scale(1.18); }
-  85%  { transform: rotate(calc(var(--shake-intensity, 45deg) * 0.25)) scale(1.18); }
+  10%  { transform: rotate(calc(var(--shake-intensity, 10deg) * -1)) scale(1.18); }
+  25%  { transform: rotate(var(--shake-intensity, 10deg)) scale(1.18); }
+  40%  { transform: rotate(calc(var(--shake-intensity, 10deg) * -1)) scale(1.18); }
+  55%  { transform: rotate(var(--shake-intensity, 10deg)) scale(1.18); }
+  70%  { transform: rotate(calc(var(--shake-intensity, 10deg) * -0.5)) scale(1.18); }
+  85%  { transform: rotate(calc(var(--shake-intensity, 10deg) * 0.25)) scale(1.18); }
   100% { transform: rotate(0deg) scale(1.18); }
+}
+/* Locked-rest — frozen post-shake state */
+.ring.is-locked-rest .slot.is-winner .chest-stack {
+  transform: rotate(0deg) scale(1.18);
 }
 
 /* ============================================================
    Always-visible gamified chest tag
+   Offset 10px LEFT to align with the chest's diagonal pose
    ============================================================ */
 .chest-tag {
   position: absolute;
-  left: 50%;
+  left: calc(50% - 10px);
   bottom: -22px;
   transform: translateX(-50%);
   font-size: clamp(8px, 2.2vw, 10px);
@@ -589,7 +544,6 @@ button { font-family: inherit; }
   z-index: 6;
   pointer-events: none;
 }
-/* Notched corners — gamified frame look */
 .chest-tag::before,
 .chest-tag::after {
   content: '';
@@ -604,9 +558,8 @@ button { font-family: inherit; }
 .chest-tag::before { left: -4px; }
 .chest-tag::after { right: -4px; }
 
-/* Hide tag during spinning to avoid blur smear */
-.ring.is-spinning .chest-tag { opacity: 0; transition: opacity 200ms; }
-/* Hide non-winner tags when revealing */
+/* Labels stay visible during spinning (per spec) */
+/* Hide only non-winner tags when revealing a winner */
 .ring.is-revealing .slot:not(.is-winner) .chest-tag { opacity: 0; }
 
 /* ============================================================
@@ -621,10 +574,7 @@ button { font-family: inherit; }
     rgba(20, 14, 30, 0.55);
   backdrop-filter: blur(6px) saturate(0.6);
   -webkit-backdrop-filter: blur(6px) saturate(0.6);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 10px;
   border: 1px solid color-mix(in oklab, white 18%, transparent);
   z-index: 10;
@@ -636,13 +586,10 @@ button { font-family: inherit; }
   from { opacity: 0; transform: scale(0.96); }
   to { opacity: 1; transform: scale(1); }
 }
-
 .lock-icon {
   position: relative;
   width: 32px; height: 38px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  display: flex; align-items: flex-end; justify-content: center;
   filter: drop-shadow(0 0 12px rgba(255,255,255,0.45));
 }
 .lock-shackle {
@@ -668,7 +615,6 @@ button { font-family: inherit; }
   background: rgba(20, 14, 30, 0.55);
   border-radius: 999px 999px 2px 2px;
 }
-
 .lock-label {
   text-align: center;
   font-size: 9px;
@@ -739,10 +685,8 @@ button { font-family: inherit; }
    ============================================================ */
 .light-beam {
   position: absolute;
-  left: 50%;
-  bottom: 50%;
-  width: 70%;
-  height: 280%;
+  left: 50%; bottom: 50%;
+  width: 70%; height: 280%;
   transform: translateX(-50%);
   background: radial-gradient(ellipse at bottom,
     color-mix(in oklab, var(--chest-glow, var(--accent)) 90%, white) 0%,
@@ -810,98 +754,50 @@ button { font-family: inherit; }
 }
 
 /* ============================================================
-   Prize: NAME (above chest) and GEM (inside chest mouth, layer 2)
+   Prize TEXT — replaces the gem (placeholder for real prize images)
+   Inside the chest mouth, offset -10px x and -10px y from natural center
    ============================================================ */
-
-/* Name banner — sits at arena top center (above the carousel) */
-.prize-name-banner {
+.prize-text-mount {
   position: absolute;
-  left: 50%;
-  top: 6%;
-  transform: translate(-50%, 0);
-  font-size: clamp(12px, 3vw, 14px);
+  left: calc(50% - 10px);
+  bottom: calc(38% + 10px);
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 9;
+  opacity: 0;
+  animation: prize-text-rise 850ms cubic-bezier(0.2, 1.3, 0.3, 1.05) 600ms forwards;
+}
+@keyframes prize-text-rise {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(60%) scale(0.5); }
+  20%  { opacity: 1; }
+  60%  { transform: translateX(-50%) translateY(-12%) scale(1.05); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+.prize-text-label {
+  font-size: clamp(11px, 2.6vw, 13px);
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   color: white;
   text-align: center;
   white-space: nowrap;
   text-transform: uppercase;
-  padding: 6px 16px;
-  background: color-mix(in oklab, var(--bg-card) 90%, transparent);
+  padding: 5px 12px;
+  background: color-mix(in oklab, var(--bg-card) 92%, transparent);
   border: 1px solid color-mix(in oklab, var(--gem-color, var(--accent)) 70%, var(--border));
   border-radius: 999px;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--gem-color, var(--accent)) 30%, transparent) inset,
-    0 6px 18px rgba(0,0,0,0.45),
-    0 0 22px color-mix(in oklab, var(--gem-color, var(--accent)) 50%, transparent);
-  pointer-events: none;
-  z-index: 35;
-  opacity: 0;
-  animation: prize-name-in 500ms var(--ease-expo-out) 600ms forwards;
+    0 0 0 1px color-mix(in oklab, var(--gem-color, var(--accent)) 35%, transparent) inset,
+    0 4px 14px rgba(0,0,0,0.5),
+    0 0 18px color-mix(in oklab, var(--gem-color, var(--accent)) 55%, transparent);
 }
-.prize-name-banner.is-flying {
+
+/* Claim — prize text flies to user pill */
+.ring.is-claiming .slot.is-winner .prize-text-mount {
   animation: prize-fly 700ms var(--ease-expo-out) forwards;
 }
-@keyframes prize-name-in {
-  0%   { opacity: 0; transform: translate(-50%, -16px) scale(0.85); }
-  100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
-}
-
-/* Gem mount — inside chest mouth, anchored to chest body */
-.prize-gem-mount {
-  position: absolute;
-  left: 50%;
-  bottom: 38%;  /* roughly the chest mouth opening on open-state image */
-  transform: translateX(-50%);
-  pointer-events: none;
-  z-index: 9;  /* above chest images (z 2-3), below sparks (z 8 absolute, but sparks have higher) */
-  opacity: 0;
-  animation: prize-gem-rise 850ms cubic-bezier(0.2, 1.3, 0.3, 1.05) 600ms forwards;
-}
-@keyframes prize-gem-rise {
-  0%   { opacity: 0; transform: translateX(-50%) translateY(60%) scale(0.3); }
-  20%  { opacity: 1; }
-  60%  { transform: translateX(-50%) translateY(-12%) scale(1.08); }
-  100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-}
-
-.prize-gem {
-  width: clamp(36px, 9vw, 52px);
-  aspect-ratio: 1 / 1.05;
-  background:
-    radial-gradient(circle at 35% 28%, rgba(255,255,255,0.95), rgba(255,255,255,0.25) 30%, transparent 55%),
-    linear-gradient(155deg,
-      color-mix(in oklab, var(--gem-color, var(--accent)) 80%, white) 0%,
-      var(--gem-color, var(--accent)) 50%,
-      color-mix(in oklab, var(--gem-color, var(--accent)) 65%, black) 100%);
-  clip-path: polygon(50% 0%, 100% 35%, 82% 100%, 18% 100%, 0% 35%);
-  filter:
-    drop-shadow(0 6px 12px rgba(0,0,0,0.55))
-    drop-shadow(0 0 18px var(--gem-color, var(--accent)));
-  animation: gem-bob 2.6s ease-in-out infinite 1500ms;
-}
-@keyframes gem-bob {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50%      { transform: translateY(-3px) rotate(2deg); }
-}
-
-/* Claim — both name + gem fly to user pill */
-.ring.is-claiming .slot.is-winner .prize-gem-mount {
-  animation: prize-fly-gem 700ms var(--ease-expo-out) forwards;
-}
 @keyframes prize-fly {
-  0%   { opacity: 1; transform: translate(-50%, 0) scale(1); }
-  90%  { opacity: 0.9; }
-  100% {
-    opacity: 0;
-    transform:
-      translate(calc(-50% + var(--target-x, 0px)), var(--target-y, -200px))
-      scale(0.18);
-  }
-}
-@keyframes prize-fly-gem {
   0%   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
   90%  { opacity: 0.9; }
   100% {
@@ -909,15 +805,13 @@ button { font-family: inherit; }
     transform:
       translateX(calc(-50% + var(--target-x, 0px)))
       translateY(var(--target-y, -200px))
-      scale(0.15);
+      scale(0.18);
   }
 }
-
-/* During closing, gem is gone (banner is removed in JSX via showPrize gating) */
-.ring.is-closing .prize-gem-mount { opacity: 0; }
+.ring.is-closing .prize-text-mount { opacity: 0; }
 
 /* ============================================================
-   Bottom controls
+   Bottom controls — content-aware button
    ============================================================ */
 .controls {
   grid-area: controls;
@@ -934,15 +828,18 @@ button { font-family: inherit; }
   appearance: none;
   border: 0;
   cursor: pointer;
-  padding: 0;
-  width: clamp(220px, 70vw, 340px);
+  padding: 0 26px;
+  width: auto;
+  min-width: clamp(180px, 55vw, 240px);
+  max-width: min(95vw, 380px);
   height: clamp(54px, 8vh, 64px);
+  white-space: nowrap;
   border-radius: 999px;
   background:
     linear-gradient(180deg, color-mix(in oklab, var(--accent) 100%, transparent), color-mix(in oklab, var(--accent) 80%, black)),
     var(--accent);
   color: white;
-  font-size: clamp(14px, 3.6vw, 16px);
+  font-size: clamp(13px, 3.4vw, 15px);
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -950,7 +847,13 @@ button { font-family: inherit; }
     0 0 0 1px color-mix(in oklab, var(--accent) 60%, white) inset,
     0 10px 28px color-mix(in oklab, var(--accent) 35%, transparent),
     0 0 32px color-mix(in oklab, var(--accent) 30%, transparent);
-  transition: transform 150ms var(--ease-standard), box-shadow 200ms, filter 200ms;
+  transition:
+    width 320ms var(--ease-expo-out),
+    min-width 320ms var(--ease-expo-out),
+    background 320ms var(--ease-expo-out),
+    box-shadow 200ms,
+    transform 150ms var(--ease-standard),
+    filter 200ms;
   overflow: hidden;
 }
 .main-btn::before {
@@ -1002,31 +905,68 @@ button { font-family: inherit; }
 }
 .main-btn.is-cooldown {
   background: var(--bg-secondary);
-  color: var(--fg-muted);
+  color: var(--fg);
   box-shadow: 0 0 0 1px var(--border) inset;
   filter: none;
   font-size: clamp(11px, 2.8vw, 13px);
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
 }
+.main-btn.is-cooldown::before { display: none; }
 .main-btn.is-connect {
   background:
     linear-gradient(180deg, color-mix(in oklab, var(--accent) 80%, white), color-mix(in oklab, var(--accent) 75%, black));
 }
 
+/* Hourglass — back-and-forth flip during cooldown */
+.hourglass {
+  display: inline-block;
+  width: 12px;
+  height: 16px;
+  position: relative;
+  flex-shrink: 0;
+}
+.hourglass::before, .hourglass::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 0; height: 0;
+  border-style: solid;
+  transform: translateX(-50%);
+}
+.hourglass::before {
+  top: 0;
+  border-width: 8px 6px 0 6px;
+  border-color: currentColor transparent transparent transparent;
+}
+.hourglass::after {
+  bottom: 0;
+  border-width: 0 6px 8px 6px;
+  border-color: transparent transparent currentColor transparent;
+}
+.main-btn.is-cooldown .hourglass {
+  animation: hourglass-flip 2.4s ease-in-out infinite;
+  color: var(--accent);
+}
+@keyframes hourglass-flip {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(180deg); }
+}
+
 /* ============================================================
-   Mobile portrait tightening
+   Mobile
    ============================================================ */
 @media (max-width: 480px) {
   .arena { perspective: 800px; }
   .ring {
-    width: clamp(260px, 88vw, 360px);
+    width: clamp(280px, 96vw, 380px);
     height: clamp(160px, 52vw, 240px);
   }
   .slot {
-    width: clamp(120px, 36vw, 180px);
-    height: clamp(120px, 36vw, 180px);
-    margin-left: calc(clamp(120px, 36vw, 180px) / -2);
-    margin-top:  calc(clamp(120px, 36vw, 180px) / -2);
+    width: clamp(110px, 32vw, 160px);
+    height: clamp(110px, 32vw, 160px);
+    margin-left: calc(clamp(110px, 32vw, 160px) / -2);
+    margin-top:  calc(clamp(110px, 32vw, 160px) / -2);
+    --ring-z-applied: min(var(--ring-z, 290px), 30vw);
   }
   .user-pill { font-size: 11px; padding: 5px 9px; gap: 6px; }
   .user-pill .user-role { font-size: 10px; }
@@ -1054,19 +994,20 @@ button { font-family: inherit; }
 }
 
 @media (min-width: 768px) {
-  .ring { width: clamp(440px, 62vmin, 660px); }
+  .ring { width: clamp(440px, 60vmin, 640px); }
+  .slot { --ring-z-applied: min(var(--ring-z, 290px), 28vw); }
   .top-bar { padding-top: 18px; }
   .letter-slots { gap: 8px; }
 }
 
 @media (min-width: 1200px) {
-  .ring { width: 660px; }
+  .ring { width: 640px; }
+  .slot { --ring-z-applied: var(--ring-z, 290px); }
 }
 
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .ring, .prize-gem, .prize-name, .lock-chip, .map-card, .map-overlay,
-  .chest-closed, .chest-open, .open-flash {
+  .ring, .prize-text-mount, .lock-chip, .map-card, .map-overlay,
+  .chest-closed, .chest-open, .open-flash, .hourglass {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }

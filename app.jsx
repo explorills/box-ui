@@ -1,4 +1,18 @@
-/* App entry — wires Tweaks panel + carousel */
+/* App entry — wires Tweaks panel + Carousel
+ *
+ * Backend integration points:
+ *   • config/chests.js     — replace CHESTS array
+ *   • config/roles.js      — replace ROLES array
+ *   • TWEAK_DEFAULTS below — initial UI state (all overridable from the host's Tweaks panel)
+ *
+ * The Tweaks panel is a DEV ONLY tool. In production, replace the tweaks state
+ * with whatever your backend provides:
+ *   - connected, username, role, collectedCount, lastRevealedIdx → user state
+ *   - cooldownDays/Hours/Minutes → backend cooldown timer (UI doesn't tick it down,
+ *     just renders whatever you pass)
+ *   - spinOutcome / phaseOverride → DEV ONLY (force scenarios for QA / preview)
+ *   - audioEnabled, mapDefaultOpen, sparkCount, etc. → user prefs
+ */
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "accent": "#7c3aed",
@@ -16,7 +30,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "idleSpeed": 22,
   "sparkCount": 22,
   "openCrossfade": 450,
-  "shakeIntensity": 45,
+  "shakeIntensity": 10,
   "mapDefaultOpen": false,
   "audioEnabled": true
 }/*EDITMODE-END*/;
@@ -55,139 +69,91 @@ function App() {
     document.documentElement.style.setProperty('--accent', tweaks.accent);
   }, [tweaks.accent]);
 
+  // ── Dev scenario presets ─────────────────────────────────────────────
+  const scenarios = {
+    'Reset (active)': () => setTweak({
+      phaseOverride: 'AUTO', spinOutcome: 'AUTO',
+      cooldownDays: 0, cooldownHours: 0, cooldownMinutes: 0,
+      connected: true, role: 'EXPLORILLS',
+    }),
+    'Spinning': () => setTweak({ phaseOverride: 'SPINNING' }),
+    'Cooldown 6d 12h 30m': () => setTweak({
+      phaseOverride: 'COOLDOWN', cooldownDays: 6, cooldownHours: 12, cooldownMinutes: 30,
+    }),
+    'Cooldown 0d 2h 14m': () => setTweak({
+      phaseOverride: 'COOLDOWN', cooldownDays: 0, cooldownHours: 2, cooldownMinutes: 14,
+    }),
+    'Locked: Mythic for EXPLORILLS': () => setTweak({
+      phaseOverride: 'LOCKED-SHAKE', spinOutcome: 'MYTHIC', role: 'EXPLORILLS',
+      cooldownDays: 0, cooldownHours: 0, cooldownMinutes: 0,
+    }),
+    'Won: Rare for EXPLORILLS': () => setTweak({
+      phaseOverride: 'REVEALED', spinOutcome: 'RARE', role: 'EXPLORILLS',
+      cooldownDays: 0, cooldownHours: 0, cooldownMinutes: 0,
+    }),
+    'Won: Mythic for +CHRONICLES': () => setTweak({
+      phaseOverride: 'REVEALED', spinOutcome: 'MYTHIC', role: 'PROMDRILLS_CHRONICLES',
+      cooldownDays: 0, cooldownHours: 0, cooldownMinutes: 0,
+    }),
+    'Disconnected (CONNECT)': () => setTweak({
+      connected: false, phaseOverride: 'AUTO', spinOutcome: 'AUTO',
+      cooldownDays: 0, cooldownHours: 0, cooldownMinutes: 0,
+    }),
+  };
+
   return (
     <>
       <OneBox tweaks={tweaks} />
       <TweaksPanel title="one BOX · Tweaks">
+        <TweakSection label="Dev presets">
+          {Object.entries(scenarios).map(([label, fn]) => (
+            <TweakButton key={label} label={label} onClick={fn} secondary />
+          ))}
+        </TweakSection>
+
         <TweakSection label="Theme">
-          <TweakColor
-            label="Accent"
-            value={tweaks.accent}
-            onChange={(v) => setTweak('accent', v)}
-          />
+          <TweakColor label="Accent" value={tweaks.accent} onChange={(v) => setTweak('accent', v)} />
         </TweakSection>
 
         <TweakSection label="User & role">
-          <TweakToggle
-            label="Connected"
-            value={tweaks.connected}
-            onChange={(v) => setTweak('connected', v)}
-          />
-          <TweakText
-            label="Username"
-            value={tweaks.username}
-            placeholder="EXPLORER"
-            onChange={(v) => setTweak('username', v)}
-          />
-          <TweakSelect
-            label="Role"
-            value={tweaks.role}
-            options={ROLE_OPTIONS}
-            onChange={(v) => setTweak('role', v)}
-          />
+          <TweakToggle label="Connected" value={tweaks.connected} onChange={(v) => setTweak('connected', v)} />
+          <TweakText label="Username" value={tweaks.username} placeholder="EXPLORER" onChange={(v) => setTweak('username', v)} />
+          <TweakSelect label="Role" value={tweaks.role} options={ROLE_OPTIONS} onChange={(v) => setTweak('role', v)} />
         </TweakSection>
 
         <TweakSection label="Letter progress">
-          <TweakSlider
-            label="Collected"
-            value={tweaks.collectedCount}
-            min={0} max={9} step={1}
-            onChange={(v) => setTweak('collectedCount', v)}
-          />
-          <TweakSlider
-            label="Last revealed idx"
-            value={tweaks.lastRevealedIdx}
-            min={-1} max={9} step={1}
-            onChange={(v) => setTweak('lastRevealedIdx', v)}
-          />
+          <TweakSlider label="Collected" value={tweaks.collectedCount} min={0} max={9} step={1} onChange={(v) => setTweak('collectedCount', v)} />
+          <TweakSlider label="Last revealed idx" value={tweaks.lastRevealedIdx} min={-1} max={9} step={1} onChange={(v) => setTweak('lastRevealedIdx', v)} />
         </TweakSection>
 
-        <TweakSection label="Force scenario">
-          <TweakSelect
-            label="Spin outcome"
-            value={tweaks.spinOutcome}
-            options={OUTCOME_OPTIONS}
-            onChange={(v) => setTweak('spinOutcome', v)}
-          />
-          <TweakSelect
-            label="Phase override"
-            value={tweaks.phaseOverride}
-            options={PHASE_OPTIONS}
-            onChange={(v) => setTweak('phaseOverride', v)}
-          />
+        <TweakSection label="Force scenario (DEV)">
+          <TweakSelect label="Spin outcome" value={tweaks.spinOutcome} options={OUTCOME_OPTIONS} onChange={(v) => setTweak('spinOutcome', v)} />
+          <TweakSelect label="Phase override" value={tweaks.phaseOverride} options={PHASE_OPTIONS} onChange={(v) => setTweak('phaseOverride', v)} />
         </TweakSection>
 
         <TweakSection label="Cooldown">
-          <TweakSlider
-            label="Days"
-            value={tweaks.cooldownDays}
-            min={0} max={7} step={1} unit="d"
-            onChange={(v) => setTweak('cooldownDays', v)}
-          />
-          <TweakSlider
-            label="Hours"
-            value={tweaks.cooldownHours}
-            min={0} max={23} step={1} unit="h"
-            onChange={(v) => setTweak('cooldownHours', v)}
-          />
-          <TweakSlider
-            label="Minutes"
-            value={tweaks.cooldownMinutes}
-            min={0} max={59} step={1} unit="m"
-            onChange={(v) => setTweak('cooldownMinutes', v)}
-          />
+          <TweakSlider label="Days" value={tweaks.cooldownDays} min={0} max={7} step={1} unit="d" onChange={(v) => setTweak('cooldownDays', v)} />
+          <TweakSlider label="Hours" value={tweaks.cooldownHours} min={0} max={23} step={1} unit="h" onChange={(v) => setTweak('cooldownHours', v)} />
+          <TweakSlider label="Minutes" value={tweaks.cooldownMinutes} min={0} max={59} step={1} unit="m" onChange={(v) => setTweak('cooldownMinutes', v)} />
         </TweakSection>
 
         <TweakSection label="Carousel">
-          <TweakSlider
-            label="Ring radius"
-            value={tweaks.ringRadius}
-            min={140} max={360} step={5} unit="px"
-            onChange={(v) => setTweak('ringRadius', v)}
-          />
-          <TweakSlider
-            label="Idle speed"
-            value={tweaks.idleSpeed}
-            min={0} max={30} step={1} unit="°/s"
-            onChange={(v) => setTweak('idleSpeed', v)}
-          />
+          <TweakSlider label="Ring radius" value={tweaks.ringRadius} min={140} max={360} step={5} unit="px" onChange={(v) => setTweak('ringRadius', v)} />
+          <TweakSlider label="Idle speed" value={tweaks.idleSpeed} min={0} max={50} step={1} unit="°/s" onChange={(v) => setTweak('idleSpeed', v)} />
         </TweakSection>
 
         <TweakSection label="Effects">
-          <TweakSlider
-            label="Sparks"
-            value={tweaks.sparkCount}
-            min={0} max={48} step={2}
-            onChange={(v) => setTweak('sparkCount', v)}
-          />
-          <TweakSlider
-            label="Open crossfade"
-            value={tweaks.openCrossfade}
-            min={200} max={900} step={25} unit="ms"
-            onChange={(v) => setTweak('openCrossfade', v)}
-          />
-          <TweakSlider
-            label="Shake intensity"
-            value={tweaks.shakeIntensity}
-            min={20} max={60} step={1} unit="°"
-            onChange={(v) => setTweak('shakeIntensity', v)}
-          />
+          <TweakSlider label="Sparks" value={tweaks.sparkCount} min={0} max={48} step={2} onChange={(v) => setTweak('sparkCount', v)} />
+          <TweakSlider label="Open crossfade" value={tweaks.openCrossfade} min={200} max={900} step={25} unit="ms" onChange={(v) => setTweak('openCrossfade', v)} />
+          <TweakSlider label="Lock tilt" value={tweaks.shakeIntensity} min={2} max={45} step={1} unit="°" onChange={(v) => setTweak('shakeIntensity', v)} />
         </TweakSection>
 
         <TweakSection label="Audio">
-          <TweakToggle
-            label="Sound + haptics"
-            value={tweaks.audioEnabled}
-            onChange={(v) => setTweak('audioEnabled', v)}
-          />
+          <TweakToggle label="Sound + haptics" value={tweaks.audioEnabled} onChange={(v) => setTweak('audioEnabled', v)} />
         </TweakSection>
 
         <TweakSection label="Map">
-          <TweakToggle
-            label="Open by default"
-            value={tweaks.mapDefaultOpen}
-            onChange={(v) => setTweak('mapDefaultOpen', v)}
-          />
+          <TweakToggle label="Open by default" value={tweaks.mapDefaultOpen} onChange={(v) => setTweak('mapDefaultOpen', v)} />
         </TweakSection>
       </TweaksPanel>
     </>
