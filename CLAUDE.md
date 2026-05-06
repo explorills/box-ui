@@ -4,62 +4,125 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Running the app
 
-There is **no build step, no package manager, no tests, no lint**. React, ReactDOM, and Babel are vendored under `vendor/` and `<script type="text/babel">` compiles JSX in the browser. The app is the four files loaded by `index.html`.
+There is **no build step, no package manager, no tests, no lint**. React, ReactDOM, and Babel are vendored under `vendor/` and `<script type="text/babel">` compiles JSX in the browser.
 
-To preview, open `index.html` directly or serve the directory statically (e.g. `python3 -m http.server`). Editing any `.jsx`, `.js`, or `.css` file and refreshing reflects changes immediately.
+To preview, serve the directory statically (e.g. `python3 -m http.server 8765 --directory .`) and open the served URL — opening `index.html` from the file:// scheme works for most things but breaks audio (Web Audio context can be hostile under file://).
 
-## Architecture
+After any edit, hard-reload the browser. There is no source map; JSX errors surface as cryptic runtime exceptions, so check the console first when something silently breaks.
 
-### Top-level wiring (`index.html`)
-Loads, in order: vendored React, `config/chests.js`, `config/roles.js`, `audio/audio.js`, `tweaks-panel.jsx`, `carousel.jsx`, `app.jsx`. Globals are the integration surface — there are no modules.
+## Top-level wiring
 
-- `window.OneBoxConfig.CHESTS` / `window.OneBoxConfig.ROLES` — backend-replaceable data
-- `window.OneBoxAudio` — `play(name)` / `setMuted` / `unlock` (Web Audio synth, lazy-init on first gesture)
-- `window.OneBox` — the React component
-- `window.useTweaks` + `window.Tweak*` — control-panel primitives
+`index.html` loads, in order: vendored React, `config/chests.js`, `config/roles.js`, `audio/audio.js`, `tweaks-panel.jsx`, `carousel.jsx`, `app.jsx`. There are no modules — everything communicates through a small set of `window.*` globals that double as the backend integration surface:
 
-The host that embeds this prototype can override `window.OneBoxConfig` *before* the scripts run to inject real chest/role data without forking the files.
+- `window.OneBoxConfig.CHESTS` / `window.OneBoxConfig.ROLES` — overridable data, set in `config/`.
+- `window.OneBoxAudio` — synthesized SFX, exposes `play(name)` / `setMuted` / `unlock`.
+- `window.OneBox` — the React component (mounted by `app.jsx`).
+- `window.useTweaks`, `window.Tweak*` — control-panel primitives.
 
-### Phase machine (`carousel.jsx`)
-The entire user flow is a single state machine in `OneBox`:
+A host that embeds this prototype can override any of these (especially `OneBoxConfig`) *before* the scripts run.
+
+## Phase machine (`carousel.jsx`)
+
+The entire user flow is one state machine inside `OneBox`:
 
 ```
-idle → spinning → stopped → (eligible)  shaking      → opening → revealed → claiming → closing → idle
+idle → spinning → stopped → (eligible)  shaking        → opening → revealed → claiming → idle
                           ↘ (locked)    shaking-locked → locked-rest → (tap stage) → idle
 ```
 
-Transitions are driven by `setTimeout` chains in the phase-progression `useEffect`. Two RAF loops drive the ring rotation: one for idle drift (with smoothstep ramp-up) and one for the eased spin-to-target. The spin loop has a `setTimeout` backup so the phase still advances if RAF stalls (e.g. tab backgrounded).
+Notes that catch new sessions out:
+- There is **no separate `closing` phase**. The chest's lid-close, winner-recede (scale 1.32 → 1.0), and non-winner fade-back-in all run as CSS animations bound to `.ring.is-claiming`, in parallel with the JS-driven prize fly. After `CLAIM_MS`, the phase goes straight to `idle`.
+- Locked reveals never run `winner-rise`; instead the chest scales to 1.18 and runs `chest-lock-vibrate` (translate + small rotation, ~50ms cycle, ~7 cycles over 375ms).
+- `phaseOverride !== 'AUTO'` is **DEV ONLY** — it freezes the carousel into a snapshot of any phase regardless of real state. Backends must never set it.
 
-Lock-vs-eligible is computed from `winnerIdx > role.maxIdx`. Locked reveals never show the prize text or sparks — they show the frosted lock overlay and a "UNLOCKS AT … TIER" chip, then freeze in `locked-rest` waiting for a tap anywhere on the stage.
+## Backend integration contracts
 
-### Tweaks panel — dual role
-`tweaks-panel.jsx` is **not just a dev panel**. It is also the production state container: `useTweaks(defaults)` returns the `[values, setTweak]` pair that the rest of the app reads from. In production the panel never opens, but the same hook still holds state.
+All "backend hooks" are commented `BACKEND POINT:` in source. The substantive ones:
 
-Two protocols matter:
+### SpinPlan (`makeLocalSpinPlan`)
+The ONE handoff between frontend and backend for the spin. Shape:
+```
+{ accelMs, cruiseMs, decelMs, peakDegPerSec, chosenIdx }
+```
+The frontend integrates `spinVelocityAt(t, plan) * peakDegPerSec` deterministically; **it never invents speed values that would be authoritative**. Replace `makeLocalSpinPlan` with a `fetch()` and that's the entire spin contract. `MAX_SPEED_DEG_PER_SEC = 2100` is the visualization ceiling — per-spin peaks live well below this so the bar doesn't fill, leaving headroom for future "boost" mechanics.
 
-1. **Host messaging** — `TweaksPanel` registers a `message` listener for `__activate_edit_mode` / `__deactivate_edit_mode`, then posts `__edit_mode_available`. The order matters: the listener must exist before the announce or the host's activate can land first and silently no-op. Closing posts `__edit_mode_dismissed`; the host echoes back `__deactivate_edit_mode` which is what actually unmounts the panel.
-2. **EDITMODE-BEGIN / EDITMODE-END** — the `TWEAK_DEFAULTS` block in `app.jsx` is wrapped in `/*EDITMODE-BEGIN*/ … /*EDITMODE-END*/`. When the user changes a tweak, `setTweak` posts `__edit_mode_set_keys` and the host **rewrites that JSON block on disk**. Do not move, rename, or split this block, and do not introduce computed values inside it — the host parses it as JSON.
+### Cooldown countdown
+Backend supplies a SNAPSHOT (`cooldownDays`/`Hours`/`Minutes`/`Seconds`); the UI captures `Date.now()` at activation and ticks live every second from there. When the backend re-injects values, the `useEffect` restarts cleanly. The UI never falls below 0; the backend re-syncs separately.
 
-`spinOutcome` and `phaseOverride` are DEV-ONLY tweaks. When `phaseOverride !== 'AUTO'`, the carousel renders a static snapshot of that phase (via `overrideToPhase` and `renderPhase` / `renderWinnerIdx`) and disables the real flow. Backends should never set these.
+### Prize / letter award
+The backend just advances `tweaks.collectedCount` (number of UNIQUE letters discovered). The UI computes `slotsFilled = total occurrences of collected letters in the word` and displays `slotsFilled / word.length` — find R in RENDRILLS → 2/9.
 
-### Backend integration points
-The `carousel.jsx` and `app.jsx` headers mark every backend hook with `BACKEND POINT:` comments. The substantive ones:
+### Connect, Claim
+`onConnect` is a stub for the auth/wallet flow. `onClaim` is local UI; the backend does not need to call it.
 
-- **Spin RNG** — `spin()` picks `chosen` with `Math.random()`. Replace with the server-decided index. The `spinOutcome` tweak forces an outcome for QA.
-- **Cooldown** — purely display. The UI does **not** tick down; pass updated `cooldownDays/Hours/Minutes` from the backend.
-- **Letter award** — the backend just advances `collectedCount`; the unique-letters slicing is done locally against `role.word`.
-- **Connect** — `onConnect` is a stub; wire your auth/wallet flow there.
-- **Prize content** — the `.prize-text-mount` shows `chest.prize` text. The animation (claim flies to the user pill) is content-agnostic; swapping in a real prize image element just works.
+## Tweaks panel — dual role (`tweaks-panel.jsx`)
 
-### Styling
-All design tokens live in `styles/tokens.css` and are imported by `app.css`. `--accent` is set per-mount on `<html>` from `tweaks.accent`, and per-chest `--chest-glow` cascades from the `.stage` style prop down to each slot. Per-chest accents come from the chest data, not CSS — `chest.glow` is the source of truth.
+The panel is **not just a dev tool**; `useTweaks(defaults)` is the production state container the entire UI reads from. In production the panel never opens (nothing visible) but the same hook still holds state.
 
-The `tokens.css` neutrals (oklch, hue 265, chroma 0.02) are deliberately locked across the wider ONE ecosystem. Per-project accents are listed there but used **minimally** — never as bulk fills. one BOX's accent is `--accent-box: #7c3aed`.
+Three protocols are load-bearing here:
 
-## Things to know before editing
+1. **Host postMessage**: `TweaksPanel` registers a `message` listener for `__activate_edit_mode` / `__deactivate_edit_mode`, then posts `__edit_mode_available`. **The listener must exist before the announce**, or the host's activate can land first and the toolbar toggle silently no-ops. Closing posts `__edit_mode_dismissed`; the host echoes back `__deactivate_edit_mode`, which is what actually unmounts the panel.
 
-- **Order of `CHESTS` = ring sequence.** `role.maxIdx` is an index into that array, so reordering chests reorders the role unlock ladder.
-- **`requires` strings on chests are display copy only** — the actual gate is `winnerIdx > role.maxIdx`. Keep both in sync if you edit either.
-- **`role.word` letter slots** show *unique* letters of the word (see `uniqueLetters`). `collectedCount` indexes into the unique list, not the raw word, so duplicate letters reveal together.
-- **The Tweaks panel ignores taps inside `.twk-panel`** during `locked-rest` so devs can keep editing tweaks while inspecting the locked state. Don't break that escape hatch.
-- **No hot reload, no source maps.** Babel-in-browser means JSX errors surface as cryptic runtime exceptions. When something silently breaks, check the console first.
+2. **EDITMODE-BEGIN / EDITMODE-END**: the `TWEAK_DEFAULTS` block in `app.jsx` is wrapped in `/*EDITMODE-BEGIN*/ … /*EDITMODE-END*/`. When a tweak changes, `setTweak` posts `__edit_mode_set_keys` and the host **rewrites that JSON block on disk**. Do not move, rename, split, or introduce computed values inside it — the host parses it as JSON.
+
+3. **Standalone auto-open + DEV FAB**: when `window.parent === window` (no embedding host), the panel auto-opens. After the user dismisses it, a small `DEV` floating button appears in the bottom-right to reopen. Embedded hosts have their own toolbar and don't get the FAB.
+
+`spinOutcome` and `phaseOverride` are DEV-ONLY tweaks. The panel exposes generous **Inject** sections for QA: open any box, lock any box, bump role, force cooldowns.
+
+## Per-chest geometry — `config/chests.js`
+
+The chest catalog stores not just art and prize text but **four pre-computed slot-relative percentages per chest**: `prizeLeftPct`, `prizeTopPct`, `lockLeftPct`, `lockTopPct`. These position the prize label and lock badge on the right pixel of each chest's PNG, accounting for two things that vary per-chest:
+
+1. **Aspect ratios differ.** Each chest's open and closed PNG has its own width/height (mythic open is 580×450, common open is 475×455, etc.), so the chest images render at different heights inside the square slot. Naive percentage positioning drifts off the chest as art changes.
+
+2. **The chest is scaled when the labels are visible.** Prize is shown during `opening`/`revealed`/`claiming`, when `chest-stack` is at `scale(1.32) translateY(-6%)` (the `winner-rise` end-state). Lock is shown during `shaking-locked`/`locked-rest`, when `chest-stack` is at `scale(1.18)`. The labels live OUTSIDE chest-stack as siblings, so they don't inherit the scale — the percentages compensate by accounting for the chest's scaled visual bounds.
+
+The recomputation cheat-sheet lives at the bottom of `config/chests.js`. If chest art is swapped, recompute these four percentages from the rectangle the designer marks on the OPEN image.
+
+**A coordinate-naming gotcha**: the rectangles the designer originally provided used `y=A;B` for the rectangle's HORIZONTAL edges and `x=A;B` for the VERTICAL edges (inverted from standard math convention). Confirmed by the rectangle proportions matching real chest cavities. Use this mapping when reading their coords.
+
+## Prize fly (claim animation)
+
+The prize-merge animation is **JS-driven RAF, not a CSS keyframe**, because three things have to happen in the SAME frame: prize disappears, pill bumps, merge sfx plays. CSS animation timing + setTimeouts couldn't guarantee that.
+
+The RAF tick (in `onClaim`):
+
+1. **Captures rects at click time**: prize and pill bounding rects → screen-coord delta `(dxScreen, dyScreen)`.
+2. **Compensates for perspective scale.** Prize lives inside `.slot`, which sits beneath `.arena { perspective: 1100px }`. CSS `translate(N px)` on the prize is in slot-LOCAL coords; the screen displacement is `N × perspective_scale`, which is `1100/(1100 - ringZ) ≈ 1.36–1.49` for typical ringZ. We measure it live by reading the slot's `getBoundingClientRect().width / offsetWidth`, then divide `dx`/`dy` by that ratio so the prize moves exactly N screen pixels.
+3. **Per-frame screen-coord collision check**. Every tick we read `node.getBoundingClientRect()` and compare its center-Y to the pill's bottom Y. The instant the prize center crosses the line, `fireMerge()` runs: opacity → 0, `setPillPulse(n+1)` (triggers the bubble bump), `sfx('merge')`, `cancelAnimationFrame`. All same frame.
+4. **Safety net** at `t >= 1` calls `fireMerge()` again — the `merged` guard makes it a no-op if the collision check already fired.
+
+The `.ring.is-claiming .slot.is-winner .prize-text-mount { animation: none; opacity: 1 }` rule is **required**. CSS animations rank above inline styles in the cascade, so the rise animation has to be removed for inline transform to win — and removing the animation drops opacity back to its base `0`, which is why `opacity: 1` is restored explicitly.
+
+The prize merges into the pill, then the pill plays its bubble bump (gradient flash + scale 1.18 → 0.96 → 1). No `close` sfx fires anymore — it landed ~140ms after `merge` and smeared into a perceived double sound.
+
+## Audio (`audio/audio.js`)
+
+Pure Web Audio. Lazy-init on first user gesture (iOS unlock). Each cue is a layered patch — multiple oscillators, optional FM-modulated bell, filtered noise, sub thump — routed through `master gain → soft-knee compressor → destination` so layers stay glued.
+
+Cues used by `carousel.jsx`:
+- `spinPress` — claim-button-press click + airhorn sweep
+- `tick` — per-30°-rotation blip during spin
+- `settle` — descent chime when a tap dismisses locked-rest (NOT spin-end; spin-end is intentionally silent)
+- `lock` — locked-chest reveal, heavy clunk + sub bass + metallic ring
+- `win` — chest opens, sub thump + ascending C-major-7 arpeggio + sparkle wash
+- `claim` — claim button press, ascending sparkle chime
+- `merge` — prize lands inside pill, descending pop
+- `close` — defined but not currently fired (removed from claim-tail to avoid double sound; left available for future use)
+
+## Layout & 3D notes
+
+- `.arena` provides the 3D perspective (`perspective: 1100px`); `.ring` rotates around Y; each `.slot` sits at `translateZ(--ring-z-applied)` where `--ring-z-applied = min(var(--ring-z), 30vw)` to keep all five chests on-screen on small viewports.
+- `.ring` has a `translateY(min(--ring-z, 30vw) × -0.054)` lift derived from `sin(10°)·cos(72°)` so the SIDE chests (the ones cycling at ±72° from front) sit at arena vertical center, not the front chest.
+- Prize and lock are **siblings of `.chest-stack`** inside `.chest-billboard` — NOT children of chest-stack. This is intentional so they don't inherit chest-stack's `scale()` animations. The slot-percent positions in `config/chests.js` already account for chest-stack's scaled bounds.
+- `--shake-intensity` carries `deg` units (set as `${tweaks.shakeIntensity}deg`). Lock-vibrate keyframes use it as `calc(var(--shake-intensity) / -5)` so default 10° → ±2° wobble. Don't try to multiply this var into `px` — units don't compose in `calc`.
+
+## Don't-break-this list
+
+- **`CHESTS` array order = ring sequence AND role-unlock ladder** (`role.maxIdx` indexes into it). Reordering chests reorders the unlock progression.
+- **`requires` strings on chests are display-only**; the gate is `winnerIdx > role.maxIdx`. Keep both in sync if you edit either.
+- **Scale-aware prize/lock percentages**: if you ever change the `winner-rise` (1.32) or shaking-locked (1.18) scale factors, the percentages in `config/chests.js` need to be recomputed — the math at the bottom of that file shows how.
+- **Inline `style.transform` during claim**: must keep `translate(calc(-50% + x), calc(-50% + y))` with `-50%` on BOTH axes. Dropping either reverts to non-centered positioning and the prize jumps off-screen on frame 0.
+- **`MAX_SPEED_DEG_PER_SEC = 2100`** is referenced in code only inside `carousel.jsx`. Bump it cautiously — the speed bar normalizes against it.
+- **Tap-anywhere-to-resume from `locked-rest`** has an explicit `.twk-panel`-ignore so devs can edit tweaks while inspecting locked state. Don't break that escape hatch.
+- **No hot reload**, no source maps. When something silently breaks, the browser console is your only signal. Most failures are JSX parse errors that show as garbled error text from Babel-in-browser.

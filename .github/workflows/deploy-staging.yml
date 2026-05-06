@@ -1,0 +1,42 @@
+name: Deploy to AWS S3 Staging
+
+# box-ui is a vendored-React, no-build static prototype. The repo root IS
+# the deploy artifact — no bun install, no `bun run build`, no ./dist/.
+# If this project is ever wrapped in a bundler later, restore the bun setup
+# and build steps from one-box's deploy-staging.yml.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-central-1
+
+    - name: Deploy to S3 Staging
+      run: |
+        aws s3 sync ./ s3://staging-box-expl-one/ \
+          --delete \
+          --exclude ".git/*" \
+          --exclude ".github/*" \
+          --exclude ".gitignore" \
+          --exclude "CLAUDE.md" \
+          --exclude "README.md"
+
+    - name: Invalidate CloudFront cache
+      run: |
+        DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[?contains(DomainName, 'staging-box-expl-one')]].Id" --output text)
+        aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
