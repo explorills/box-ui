@@ -632,7 +632,9 @@ function OneBox({ tweaks }) {
     // even if the prize node is somehow missing, we still want the carousel
     // to recover. Stored on a ref so cleanup can cancel if needed.
     const tailTimer = setTimeout(() => {
-      sfx('close');
+      // No 'close' sfx here — it would fire ~140ms after the merge cue and
+      // smear into a perceived double sound. Merge is the only audio for
+      // the whole claim → merge → chest-recede sequence.
       setPhase('idle');
       setWinnerIdx(null);
       setOpens((n) => n + 1);
