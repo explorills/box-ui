@@ -50,7 +50,11 @@ button { font-family: inherit; }
   grid-area: progress;
   position: relative;
   width: calc(100% - 24px);
-  margin: 10px 12px 4px;
+  /* Top breathing room from the package navbar (~one line of body text);
+     same on mobile and desktop so the spacing reads consistently. The
+     short-viewport (@media max-height) tightens it when vertical room is
+     genuinely scarce. */
+  margin: 18px 12px 4px;
   height: 22px;
   border-radius: 999px;
   background:
@@ -1278,9 +1282,11 @@ button { font-family: inherit; }
   .user-pill { min-width: 140px; padding: 6px 14px 7px; }
   .user-pill-name { font-size: 12px; }
   .user-pill-role { font-size: 9px; }
-  /* Pill is shorter on mobile — overlay starts higher to stay anchored
-     just below the badge instead of leaving a gap. */
-  .map-overlay { top: clamp(78px, 12vh, 110px); }
+  /* On mobile the dropdown-style overlay was too cramped — too tall a
+     pill area to dock under, too little vertical room to read the tier
+     list. Expand it to the full box-ui surface (still below the package
+     navbar, since the stage already lives inside the navbar/footer band). */
+  .map-overlay { top: 0; padding-top: 16px; }
   .map-toggle { padding: 5px 11px; font-size: 9.5px; gap: 6px; }
   /* Mobile prize: tighten typography only — position is now per-chest and
      percentage-based so it stays correct across sizes without overrides. */
