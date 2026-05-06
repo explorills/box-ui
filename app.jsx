@@ -26,6 +26,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "cooldownDays": 0,
   "cooldownHours": 0,
   "cooldownMinutes": 0,
+  "cooldownSeconds": 0,
   "ringRadius": 360,
   "idleSpeed": 22,
   "sparkCount": 48,
@@ -164,6 +165,7 @@ function App() {
           <TweakSlider label="Days" value={tweaks.cooldownDays} min={0} max={7} step={1} unit="d" onChange={(v) => setTweak('cooldownDays', v)} />
           <TweakSlider label="Hours" value={tweaks.cooldownHours} min={0} max={23} step={1} unit="h" onChange={(v) => setTweak('cooldownHours', v)} />
           <TweakSlider label="Minutes" value={tweaks.cooldownMinutes} min={0} max={59} step={1} unit="m" onChange={(v) => setTweak('cooldownMinutes', v)} />
+          <TweakSlider label="Seconds" value={tweaks.cooldownSeconds} min={0} max={59} step={1} unit="s" onChange={(v) => setTweak('cooldownSeconds', v)} />
         </TweakSection>
 
         <TweakSection label="Carousel">

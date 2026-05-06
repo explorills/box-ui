@@ -40,13 +40,31 @@ function uniqueLetters(word) {
   return out;
 }
 
-function fmtCooldown(d, h, m) {
+// Render a remaining-time number-of-seconds as a punchy "6D 12H 30M 45S"
+// string, omitting leading zero units but always showing seconds (since the
+// timer ticks visibly at 1Hz). Backend supplies the initial value; the UI
+// integrates the remaining time locally.
+function fmtCooldown(totalSec) {
+  const t = Math.max(0, Math.floor(totalSec));
+  const d = Math.floor(t / 86400);
+  const h = Math.floor((t % 86400) / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const s = t % 60;
   const parts = [];
   if (d) parts.push(`${d}D`);
   if (h || d) parts.push(`${h}H`);
-  parts.push(`${m}M`);
+  if (m || h || d) parts.push(`${m}M`);
+  parts.push(`${s}S`);
   return parts.join(' ');
 }
+
+// ─── Spin physics constants ─────────────────────────────────────────────────
+// MAX_SPEED_DEG_PER_SEC is the absolute ceiling for the angular velocity bar.
+// Per-spin peak speeds (random or backend-supplied) are visualized as a
+// fraction of this ceiling — that's what gives the bar a meaningful right
+// edge. Spins normally peak well below max so the bar never fills; that
+// headroom is reserved for future "boost" mechanics that push closer to MAX.
+const MAX_SPEED_DEG_PER_SEC = 2100;
 
 // ─── Spin plan ──────────────────────────────────────────────────────────────
 // BACKEND CONTRACT: the server returns a SpinPlan describing the entire spin.
@@ -199,21 +217,23 @@ function MapTier({ title, subtitle, chests, highlight }) {
 }
 
 // ─── Speed bar ──────────────────────────────────────────────────────────────
-// Real-speed visualization of the carousel.
-//   • The numeric readout is the actual angular velocity in deg/s — 1:1
-//     with what the ring is rotating at right now.
-//   • The right edge of the bar is the PEAK velocity reached this spin,
-//     not a fixed ceiling. As the spin accelerates, peak grows; the
-//     fill rides the right edge. Once decel starts, peak holds at the
-//     right edge while the fill recedes — leaving a visible "peak line".
-function SpeedBar({ current, peak, active }) {
+// Real-speed visualization, locked to a single root value: every frame the
+// ring's angular velocity (deg/s) is the SAME number that drives the bar's
+// fill width and the numeric readout. With MAX_SPEED as the right edge, the
+// bar fills only as much as this spin's actual speed reaches it — typical
+// random spins peak around 700-1100°/s and so fill 33-52%. The peak marker
+// sticks at the highest fraction reached and stays there during decel.
+function SpeedBar({ current, peak, max, active }) {
   const peakKnown = peak > 0;
-  const ratio = peakKnown ? Math.min(1, current / peak) : 0;
+  const fillRatio = Math.min(1, current / max);
+  const peakRatio = Math.min(1, peak / max);
   return (
     <div className={`speed-bar ${active || peakKnown ? 'is-active' : ''}`} aria-hidden="true">
       <div className="speed-bar-track">
-        <div className="speed-bar-fill" style={{ width: `${ratio * 100}%` }} />
-        {peakKnown && <div className="speed-bar-peak" />}
+        <div className="speed-bar-fill" style={{ width: `${fillRatio * 100}%` }} />
+        {peakKnown && (
+          <div className="speed-bar-peak" style={{ left: `${peakRatio * 100}%` }} />
+        )}
       </div>
       <div className="speed-bar-label">
         <span>
@@ -222,8 +242,8 @@ function SpeedBar({ current, peak, active }) {
           <span className="speed-bar-unit">°/s</span>
         </span>
         <span>
-          <span className="speed-bar-key">PEAK</span>{' '}
-          <span className="speed-bar-peak-val">{Math.round(peak)}</span>
+          <span className="speed-bar-key">MAX</span>{' '}
+          <span className="speed-bar-peak-val">{max}</span>
           <span className="speed-bar-unit">°/s</span>
         </span>
       </div>
@@ -360,10 +380,33 @@ function OneBox({ tweaks }) {
   const isLockedReveal = renderWinnerIdx != null && renderWinnerIdx > userMaxIdx;
 
   // ── Cooldown ───────────────────────────────────────────────────────────
+  // Backend injects the remaining-time SNAPSHOT (D/H/M/S). The UI converts
+  // it to total-seconds at activation time and ticks live from there. Stays
+  // active visually until 0 or until the backend re-injects a new state.
+  const cooldownInitialSec = (tweaks.cooldownDays ?? 0) * 86400
+                           + (tweaks.cooldownHours ?? 0) * 3600
+                           + (tweaks.cooldownMinutes ?? 0) * 60
+                           + (tweaks.cooldownSeconds ?? 0);
   const cooldownForce = phaseOverride === 'COOLDOWN';
-  const cooldownActive = cooldownForce || (
-    (tweaks.cooldownDays ?? 0) + (tweaks.cooldownHours ?? 0) + (tweaks.cooldownMinutes ?? 0) > 0
-  );
+  const cooldownActive = cooldownForce || cooldownInitialSec > 0;
+  const [cooldownRemaining, setCooldownRemaining] = useState(cooldownInitialSec);
+
+  useEffect(() => {
+    if (!cooldownActive) { setCooldownRemaining(0); return; }
+    const start = Date.now();
+    const init = cooldownInitialSec;
+    setCooldownRemaining(init);
+    const iv = setInterval(() => {
+      const remaining = init - (Date.now() - start) / 1000;
+      if (remaining <= 0) {
+        setCooldownRemaining(0);
+        clearInterval(iv);
+      } else {
+        setCooldownRemaining(remaining);
+      }
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [cooldownActive, cooldownInitialSec]);
 
   // ── Drive modes ────────────────────────────────────────────────────────
   const isIdleDrift = (phase === 'idle' && phaseOverride === 'AUTO') || phaseOverride === 'IDLE';
@@ -562,47 +605,131 @@ function OneBox({ tweaks }) {
     };
   }, [phase, phaseOverride]);
 
-  // Claim flow — prize merges into the user pill while the chest closes and
-  // recedes back into the cycle, all in lockstep. The 'claiming' phase owns
-  // every visual: prize-fly, lid-close, winner-recede (scale 1.32 → 1.0),
-  // non-winners returning to full opacity. After the animation we go straight
-  // to idle and the carousel resumes its drift.
-  // Prize-fly duration: matches the @keyframes prize-fly in app.css. The fly
-  // lands AT the pill at 100% (no overshoot), and the bubble bump is fired
-  // at the exact same moment so "merge" and "feedback" coincide.
+  // Claim flow — JS-driven RAF for the prize fly so motion, collision,
+  // disappear, sound, and bump all happen in the SAME frame.
+  //
+  // The "collision line" is the user pill's BOTTOM edge. Each frame the RAF
+  // moves the prize toward that line; on the frame where the prize's center
+  // crosses the line, we simultaneously: hide the prize, fire the bump on
+  // the pill, and play the merge SFX. There's no setTimeout in this path —
+  // setTimeout drift was what caused the prior "go past the badge" feel.
+  //
+  // The chest's lid-close and winner-recede continue as CSS animations
+  // bound to .ring.is-claiming, in parallel with the JS prize fly.
   const PRIZE_FLY_MS = 600;
-  const CLAIM_MS = PRIZE_FLY_MS + 140; // small tail so the chest finishes receding
+  const CLAIM_MS = PRIZE_FLY_MS + 140; // tail so chest finishes receding
+  const claimRafRef = useRef(0);
+
   const onClaim = useCallback(() => {
     if (phaseOverride !== 'AUTO') return;
     sfx('claim');
     const pill = pillRef.current;
     const node = prizeTextRef.current;
-    if (node) {
-      if (pill) {
-        const pr = pill.getBoundingClientRect();
-        const zr = node.getBoundingClientRect();
-        const dx = pr.left + pr.width / 2 - (zr.left + zr.width / 2);
-        const dy = pr.top + pr.height / 2 - (zr.top + zr.height / 2);
-        node.style.setProperty('--target-x', `${dx}px`);
-        node.style.setProperty('--target-y', `${dy}px`);
-      } else {
-        node.style.setProperty('--target-x', `0px`);
-        node.style.setProperty('--target-y', `-200px`);
-      }
-    }
+
     setPhase('claiming');
-    // Pill bubble fires at the EXACT moment the prize finishes its trip and
-    // disappears at the pill — that simultaneity is the "merge" feedback.
-    setTimeout(() => {
-      setPillPulse((n) => n + 1);
-      sfx('merge');
-    }, PRIZE_FLY_MS);
-    setTimeout(() => {
+
+    // Schedule the chest-close / return-to-idle tail unconditionally —
+    // even if the prize node is somehow missing, we still want the carousel
+    // to recover. Stored on a ref so cleanup can cancel if needed.
+    const tailTimer = setTimeout(() => {
       sfx('close');
       setPhase('idle');
       setWinnerIdx(null);
       setOpens((n) => n + 1);
     }, CLAIM_MS);
+
+    if (!node || !pill) {
+      // No nodes to fly between — just fire merge feedback once.
+      setTimeout(() => {
+        setPillPulse((n) => n + 1);
+        sfx('merge');
+      }, PRIZE_FLY_MS);
+      return;
+    }
+
+    // Capture geometry at click time. RAF interpolates between origin and
+    // target each frame; the target's Y is the pill's BOTTOM edge (the
+    // "collision line"). When the prize's CENTER reaches that line we treat
+    // it as a hit — fired by per-frame screen-coord collision detection so
+    // motion, hide, bump and SFX all land on the SAME frame.
+    const oRect = node.getBoundingClientRect();
+    const pRect = pill.getBoundingClientRect();
+    const oCx = oRect.left + oRect.width / 2;
+    const oCy = oRect.top  + oRect.height / 2;
+    const tCx = pRect.left + pRect.width / 2;
+    const tCy = pRect.bottom; // collision line
+    const dxScreen = tCx - oCx;
+    const dyScreen = tCy - oCy;
+
+    // PERSPECTIVE COMPENSATION
+    // The prize lives inside `.slot`, which sits at translateZ(~290–360px)
+    // beneath `.arena { perspective: 1100px }`. CSS `translate(Npx)` on the
+    // prize is in the slot's LOCAL coord space; on screen that displacement
+    // is multiplied by the perspective scale ~ 1100 / (1100 - z) ≈ 1.36–1.49.
+    // We measure the actual scale once (width-based, immune to the ring's
+    // rotateX which only compresses Y) and divide our local translates by it
+    // so the prize moves dxScreen / dyScreen pixels on screen, exactly.
+    const slotEl = node.closest('.slot');
+    let persp = 1;
+    if (slotEl) {
+      const sRect = slotEl.getBoundingClientRect();
+      const sW = slotEl.offsetWidth;
+      if (sW > 0 && sRect.width > 0) persp = sRect.width / sW;
+    }
+    if (!isFinite(persp) || persp <= 0) persp = 1;
+    const dx = dxScreen / persp;
+    const dy = dyScreen / persp;
+
+    const startTs = performance.now();
+    let merged = false;
+
+    const fireMerge = () => {
+      if (merged) return;
+      merged = true;
+      // All three on the same frame:
+      // 1) prize disappears
+      node.style.opacity = '0';
+      // 2) pill bumps
+      setPillPulse((n) => n + 1);
+      // 3) merge sound
+      sfx('merge');
+      cancelAnimationFrame(claimRafRef.current);
+    };
+
+    const tick = (now) => {
+      const t = Math.min(1, (now - startTs) / PRIZE_FLY_MS);
+      // Ease-out cubic — fast departure, gentle landing into the pill.
+      const eased = 1 - Math.pow(1 - t, 3);
+      const x = eased * dx;
+      const y = eased * dy;
+      const scale = 1 - eased * 0.6;             // 1 → 0.4
+      const skew = -6 + eased * 6;               // -6° → 0°
+
+      // Inline transform overrides the resting CSS transform during
+      // 'claiming'. BOTH axes need the -50% centering offset preserved —
+      // dropping the Y centering was the bug that made the prize "jump
+      // away / disappear" on the first frame of claim.
+      node.style.transform =
+        `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) skewX(${skew}deg) scale(${scale})`;
+
+      // Per-frame screen-coord collision: read the prize's live bounding
+      // rect and compare its CENTER-Y to the pill's bottom line. As soon as
+      // the center crosses the line we fire merge — guarantees pixel-precise
+      // arrival even if perspective math is off by a sliver.
+      const liveRect = node.getBoundingClientRect();
+      const liveCy = liveRect.top + liveRect.height / 2;
+      if (liveCy <= tCy) {
+        fireMerge();
+        return; // stop RAF — same frame as collision
+      }
+
+      if (t < 1) {
+        claimRafRef.current = requestAnimationFrame(tick);
+      } else {
+        fireMerge(); // safety net — fly window elapsed without a crossing
+      }
+    };
+    claimRafRef.current = requestAnimationFrame(tick);
   }, [phaseOverride]);
 
   const onConnect = useCallback(() => {
@@ -610,11 +737,15 @@ function OneBox({ tweaks }) {
     sfx('claim');
   }, []);
 
-  // Letter slots
+  // Letter slots. The backend tracks how many UNIQUE letters the user has
+  // discovered (`collectedCount`); finding one unique letter fills every
+  // slot in the word that holds that letter. The progress display uses the
+  // TOTAL slot count (word.length) — so a 9-letter word with 5 unique
+  // letters discovered, where those 5 cover 7 of the 9 slots, reads "7/9".
   const word = role.word;
   const wordUnique = useMemo(() => uniqueLetters(word), [word]);
-  const collectedCount = Math.max(0, Math.min(tweaks.collectedCount ?? 0, wordUnique.length));
-  const collectedSet = useMemo(() => new Set(wordUnique.slice(0, collectedCount)), [wordUnique, collectedCount]);
+  const uniqueCollected = Math.max(0, Math.min(tweaks.collectedCount ?? 0, wordUnique.length));
+  const collectedSet = useMemo(() => new Set(wordUnique.slice(0, uniqueCollected)), [wordUnique, uniqueCollected]);
 
   const letterSlots = useMemo(() => {
     if (!word) return [];
@@ -626,9 +757,14 @@ function OneBox({ tweaks }) {
     }));
   }, [word, collectedSet, tweaks.lastRevealedIdx]);
 
-  const tierProgressPct = wordUnique.length === 0
+  const totalLetters = word ? word.length : 0;
+  const slotsFilled = useMemo(
+    () => (word ? [...word].filter((c) => collectedSet.has(c)).length : 0),
+    [word, collectedSet]
+  );
+  const tierProgressPct = totalLetters === 0
     ? (role.id === 'PROMDRILLS_CHRONICLES' ? 100 : 0)
-    : (collectedCount / wordUnique.length) * 100;
+    : (slotsFilled / totalLetters) * 100;
 
   // Front-of-ring detection
   const frontIdx = useMemo(() => {
@@ -710,8 +846,8 @@ function OneBox({ tweaks }) {
           ) : (
             <>
               <span>TIER PROGRESS</span>
-              {wordUnique.length > 0 && (
-                <span className="tier-progress-count">{collectedCount}/{wordUnique.length}</span>
+              {totalLetters > 0 && (
+                <span className="tier-progress-count">{slotsFilled}/{totalLetters}</span>
               )}
             </>
           )}
@@ -781,6 +917,10 @@ function OneBox({ tweaks }) {
                 style={{
                   '--slot-angle': i * SLOT_DEG,
                   '--chest-glow': c.glow,
+                  '--prize-left': `${c.prizeLeftPct ?? 50}%`,
+                  '--prize-top':  `${c.prizeTopPct  ?? 21}%`,
+                  '--lock-left':  `${c.lockLeftPct  ?? c.prizeLeftPct ?? 50}%`,
+                  '--lock-top':   `${c.lockTopPct   ?? 50}%`,
                   zIndex: isWinner ? 50 : Math.round(100 + Math.cos(((ringAngle + i * SLOT_DEG) * Math.PI) / 180) * 10),
                   opacity: 0.40 + 0.60 * (Math.cos(((ringAngle + i * SLOT_DEG) * Math.PI) / 180) * 0.5 + 0.5),
                 }}
@@ -865,12 +1005,12 @@ function OneBox({ tweaks }) {
       </div>
 
       <div className="controls">
-        <SpeedBar current={speed.current} peak={speed.peak} active={isSpinningPhase} />
+        <SpeedBar current={speed.current} peak={speed.peak} max={MAX_SPEED_DEG_PER_SEC} active={isSpinningPhase} />
         <MainButton
           phase={renderPhase}
           connected={tweaks.connected}
           cooldownActive={cooldownActive}
-          cooldownLabel={fmtCooldown(tweaks.cooldownDays ?? 0, tweaks.cooldownHours ?? 0, tweaks.cooldownMinutes ?? 0)}
+          cooldownLabel={fmtCooldown(cooldownRemaining)}
           isLockedReveal={isLockedReveal}
           onSpin={spin}
           onClaim={onClaim}
