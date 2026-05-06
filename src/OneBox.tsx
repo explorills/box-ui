@@ -861,11 +861,19 @@ function OneBox({ tweaks }: { tweaks: any }) {
 
       <header className="top-bar">
         {tweaks.connected && (
-          <div className={`user-pill ${pillPulse > 0 ? 'is-bubble' : ''}`} ref={pillRef} key={pillPulse}>
+          <button
+            type="button"
+            className={`user-pill ${pillPulse > 0 ? 'is-bubble' : ''} ${mapOpen ? 'is-map-open' : ''}`}
+            ref={pillRef}
+            key={pillPulse}
+            onClick={() => setMapOpen((o) => !o)}
+            aria-expanded={mapOpen}
+            aria-label="Open roles and chests map"
+          >
             <span className="user-pill-glow" aria-hidden="true" />
             <span className="user-pill-name">{(tweaks.username || 'EXPLORER').toUpperCase()}</span>
             <span className="user-pill-role">@{role.label}</span>
-          </div>
+          </button>
         )}
       </header>
 
@@ -877,20 +885,14 @@ function OneBox({ tweaks }: { tweaks: any }) {
               <LetterGlyph key={i} ch={s.ch} revealed={s.collected} pulsing={s.pulsing} accent={roleAccent} />
             ))}
           </div>
-          <button
-            className={`map-toggle ${mapOpen ? 'is-open' : ''}`}
-            onClick={() => setMapOpen((o) => !o)}
-            aria-expanded={mapOpen}
-            aria-label="Roles and chests map"
-          >
-            <span className="map-toggle-dot" aria-hidden="true" />
-            MAP
-          </button>
         </div>
       )}
 
       {!tweaks.connected || !word ? (
         <div className="letter-row letter-row-empty">
+          {/* Guest mode (no user pill) keeps the MAP button as a discoverable
+              entry point. Connected users get the same map by clicking their
+              user pill — no redundant button. */}
           <button
             className={`map-toggle ${mapOpen ? 'is-open' : ''}`}
             onClick={() => setMapOpen((o) => !o)}
@@ -990,24 +992,30 @@ function OneBox({ tweaks }: { tweaks: any }) {
           })}
         </div>
 
-        {mapOpen && (
-          <div className="map-overlay" onClick={() => setMapOpen(false)}>
-            <div className="map-card" onClick={(e) => e.stopPropagation()}>
-              <div className="map-head">
-                <h3>ROLES &amp; CHESTS</h3>
-                <button className="map-close" onClick={() => setMapOpen(false)} aria-label="Close map">✕</button>
-              </div>
-              <div className="map-body">
-                <MapTier title="EXPLORILLS" chests={[CHESTS[0], CHESTS[1]]} highlight={role.id === 'EXPLORILLS'} />
-                <MapTier title="RENDRILLS" subtitle="(above plus)" chests={[CHESTS[2]]} highlight={role.id === 'RENDRILLS'} />
-                <MapTier title="PROMDRILLS" subtitle="(above plus)" chests={[CHESTS[3]]} highlight={role.id === 'PROMDRILLS'} />
-                <MapTier title="PROMDRILLS · CHRONICLES" subtitle="(grand prize)" chests={[CHESTS[4]]} highlight={role.id === 'PROMDRILLS_CHRONICLES'} />
-              </div>
-              <div className="map-foot">EQUAL ODDS · 7-DAY COOLDOWN</div>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Stage-level overlay so it covers ARENA + CONTROLS (the bottom main
+          button), not just the arena. On small viewports the previous
+          arena-scoped overlay left the bottom button uncovered and the map
+          card was forced into a tiny window. Now the overlay fills the
+          entire box-ui surface and the card can scroll inside. */}
+      {mapOpen && (
+        <div className="map-overlay" onClick={() => setMapOpen(false)}>
+          <div className="map-card" onClick={(e) => e.stopPropagation()}>
+            <div className="map-head">
+              <h3>ROLES &amp; CHESTS</h3>
+              <button className="map-close" onClick={() => setMapOpen(false)} aria-label="Close map">✕</button>
+            </div>
+            <div className="map-body">
+              <MapTier title="EXPLORILLS" chests={[CHESTS[0], CHESTS[1]]} highlight={role.id === 'EXPLORILLS'} />
+              <MapTier title="RENDRILLS" subtitle="(above plus)" chests={[CHESTS[2]]} highlight={role.id === 'RENDRILLS'} />
+              <MapTier title="PROMDRILLS" subtitle="(above plus)" chests={[CHESTS[3]]} highlight={role.id === 'PROMDRILLS'} />
+              <MapTier title="PROMDRILLS · CHRONICLES" subtitle="(grand prize)" chests={[CHESTS[4]]} highlight={role.id === 'PROMDRILLS_CHRONICLES'} />
+            </div>
+            <div className="map-foot">EQUAL ODDS · 7-DAY COOLDOWN</div>
+          </div>
+        </div>
+      )}
 
       <div className="controls">
         <SpeedBar current={speed.current} peak={speed.peak} max={MAX_SPEED_DEG_PER_SEC} active={isSpinningPhase} />

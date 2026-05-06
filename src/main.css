@@ -177,6 +177,24 @@ button { font-family: inherit; }
   text-align: center;
   overflow: hidden;
   isolation: isolate;
+  /* Pill is the map trigger when connected — feel clickable. */
+  appearance: none;
+  font-family: inherit;
+  cursor: pointer;
+  color: inherit;
+  transition: transform 150ms var(--ease-standard), box-shadow 200ms;
+}
+.user-pill:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.1) inset,
+    0 0 0 1px color-mix(in oklab, var(--accent) 35%, transparent) inset,
+    0 12px 30px color-mix(in oklab, var(--accent) 30%, transparent),
+    0 0 0 4px color-mix(in oklab, var(--accent) 10%, transparent);
+}
+.user-pill:active { transform: translateY(0); }
+.user-pill.is-map-open {
+  border-color: var(--accent);
 }
 .user-pill::before {
   /* corner notches — gamified frame */
@@ -468,7 +486,11 @@ button { font-family: inherit; }
   flex-shrink: 0;
 }
 .map-prize {
-  color: var(--fg-muted); text-transform: uppercase;
+  /* Tier-tinted prize text on every screen — was previously only applied
+     below 480px. Keeps a consistent visual link between chest swatch and
+     prize text across all viewports. */
+  color: color-mix(in oklab, var(--c, var(--fg-muted)) 70%, var(--fg));
+  text-transform: uppercase;
   font-size: 10px; letter-spacing: 0.08em;
   text-align: right; line-height: 1.3;
   flex: 1 1 0; min-width: 0; word-break: break-word;
@@ -1254,18 +1276,12 @@ button { font-family: inherit; }
      percentage-based so it stays correct across sizes without overrides. */
   .prize-text-label { font-size: 10.5px; padding: 4px 10px 5px; }
   .prize-letter-glyph { width: 18px; height: 22px; }
-  .map-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 2px;
-    padding: 6px 4px;
-  }
-  .map-prize {
-    text-align: left;
-    padding-left: 18px;
-    color: var(--c, var(--fg-muted));
-    opacity: 0.85;
-  }
+  /* Tighten chest/prize typography on mobile but keep them on the same
+     row (chest left, prize right) — flex direction and prize color now
+     stay identical to desktop so the layout reads consistently. */
+  .map-row { padding: 5px 6px; gap: 6px; }
+  .map-chest { font-size: 10px; letter-spacing: 0.1em; gap: 6px; }
+  .map-prize { font-size: 9.5px; letter-spacing: 0.06em; }
 }
 
 @media (max-height: 700px) {
