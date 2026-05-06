@@ -176,7 +176,21 @@ function useTweaks(defaults) {
 // The close button posts __edit_mode_dismissed so the host's toolbar toggle
 // flips off in lockstep; the host echoes __deactivate_edit_mode back which
 // is what actually hides the panel.
+// Production hostname allowlist — the dev panel is fully disabled (no FAB,
+// no auto-open, no postMessage listener) on these. Staging and localhost
+// keep the full panel so QA can inject scenarios.
+const PROD_HOSTS = new Set([
+  'box.expl.one',
+  'www.box.expl.one',
+]);
+const isProdHost = typeof window !== 'undefined' &&
+  PROD_HOSTS.has(window.location.hostname);
+
 function TweaksPanel({ title = 'Tweaks', children }) {
+  // On production: render nothing for the panel UI, but the rest of the app
+  // (and `useTweaks` itself) still works — it just won't have a visible UI.
+  if (isProdHost) return null;
+
   // Standalone = no embedding host. In that mode the host's __activate_edit_mode
   // message will never arrive, so the dev panel was effectively invisible. We
   // detect standalone via window.parent === window and open the panel by
