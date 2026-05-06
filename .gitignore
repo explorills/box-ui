@@ -5,3 +5,21 @@ Thumbs.db
 .idea/
 *.swp
 *~
+
+# Bundler
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Logs
+logs/
+*.log
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Bun
+bun.lockb

@@ -1,0 +1,28 @@
+{
+  "name": "ONE box - ONE ecosystem",
+  "short_name": "ONE box",
+  "description": "Mystery experience platform. Something mysterious is coming to the ONE ecosystem. Open source and community-driven.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1a0a2e",
+  "theme_color": "#7c3aed",
+  "orientation": "portrait-primary",
+  "lang": "en-US",
+  "categories": ["entertainment", "web3", "community"],
+  "icons": [
+    {
+      "src": "/src/assets/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

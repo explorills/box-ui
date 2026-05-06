@@ -1,5 +1,5 @@
 /* one BOX — interactive frontend */
-@import url('styles/tokens.css');
+@import url('./styles/tokens.css');
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -23,7 +23,9 @@ button { font-family: inherit; }
    Stage layout — fixed viewport, no scroll, mobile-first
    ============================================================ */
 .stage {
-  position: fixed;
+  /* `absolute` (not `fixed`) so the stage fills its parent <main> below the
+     EcosystemNavbar instead of covering the entire viewport. */
+  position: absolute;
   inset: 0;
   display: grid;
   grid-template-rows: auto auto auto 1fr auto;

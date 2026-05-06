@@ -1,7 +1,7 @@
 /* one BOX — role tiers
  *
- * BACKEND POINT: replace this array (or assign window.OneBoxConfig.ROLES
- * before mount) to define your own role hierarchy, unlock-words, and labels.
+ * BACKEND POINT: replace this array (or hydrate from a fetch at app boot)
+ * to define your own role hierarchy, unlock-words, and labels.
  *
  * Each role:
  *   id     — internal id (uppercased; used by the Tweaks panel role selector)
@@ -17,8 +17,16 @@
  *            the global --accent inside the stage when this role is active.
  *   shiny  — top-tier visual flag: the accent gets a shimmer/glow treatment.
  */
-window.OneBoxConfig = window.OneBoxConfig || {};
-window.OneBoxConfig.ROLES = [
+export interface Role {
+  id: string;
+  label: string;
+  maxIdx: number;
+  word: string | null;
+  accent: string;
+  shiny?: boolean;
+}
+
+export const ROLES: Role[] = [
   { id: 'GUEST',                 label: 'GUEST',                   maxIdx: -1, word: null,         accent: '#7c3aed' },
   { id: 'EXPLORILLS',            label: 'EXPLORILLS',              maxIdx:  1, word: 'RENDRILLS',  accent: '#9e6bff' },
   { id: 'RENDRILLS',             label: 'RENDRILLS',               maxIdx:  2, word: 'PROMDRILLS', accent: '#d4843d' },

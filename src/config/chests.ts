@@ -1,7 +1,7 @@
 /* one BOX — chest catalog
  *
- * BACKEND POINT: replace this array (or assign window.OneBoxConfig.CHESTS
- * before mount) to inject your own chest images, prizes, and tier requirements.
+ * BACKEND POINT: replace this array (or hydrate from a fetch at app boot)
+ * to inject your own chest images, prizes, and tier requirements.
  *
  * Each chest:
  *   id            — slug, must be unique
@@ -30,17 +30,30 @@
  *
  * Access logic uses the role's `maxIdx` against the chest index. Order = ring sequence.
  */
-window.OneBoxConfig = window.OneBoxConfig || {};
-window.OneBoxConfig.CHESTS = [
-  { id: 'common',    label: 'COMMON',    imgClosed: 'assets/common.png',    imgOpen: 'assets/common_open.png',    glow: '#22c55e', prize: 'HIDDEN LETTER',          requires: 'EXPLORILLS',
+export interface Chest {
+  id: string;
+  label: string;
+  imgClosed: string;
+  imgOpen: string;
+  glow: string;
+  prize: string;
+  requires: string;
+  prizeLeftPct: number;
+  prizeTopPct: number;
+  lockLeftPct: number;
+  lockTopPct: number;
+}
+
+export const CHESTS: Chest[] = [
+  { id: 'common',    label: 'COMMON',    imgClosed: '/assets/common.png',    imgOpen: '/assets/common_open.png',    glow: '#22c55e', prize: 'HIDDEN LETTER',          requires: 'EXPLORILLS',
     prizeLeftPct: 46.11, prizeTopPct: 21.00, lockLeftPct: 46.52, lockTopPct: 46.41 },
-  { id: 'rare',      label: 'RARE',      imgClosed: 'assets/rare.png',      imgOpen: 'assets/rare_open.png',      glow: '#3b82f6', prize: '1,111 $EXPL',            requires: 'EXPLORILLS',
+  { id: 'rare',      label: 'RARE',      imgClosed: '/assets/rare.png',      imgOpen: '/assets/rare_open.png',      glow: '#3b82f6', prize: '1,111 $EXPL',            requires: 'EXPLORILLS',
     prizeLeftPct: 43.76, prizeTopPct: 20.25, lockLeftPct: 44.42, lockTopPct: 47.37 },
-  { id: 'epic',      label: 'EPIC',      imgClosed: 'assets/epic.png',      imgOpen: 'assets/epic_open.png',      glow: '#a855f7', prize: 'BLUE MINERAL',           requires: 'RENDRILLS',
+  { id: 'epic',      label: 'EPIC',      imgClosed: '/assets/epic.png',      imgOpen: '/assets/epic_open.png',      glow: '#a855f7', prize: 'BLUE MINERAL',           requires: 'RENDRILLS',
     prizeLeftPct: 42.52, prizeTopPct: 20.71, lockLeftPct: 43.31, lockTopPct: 45.00 },
-  { id: 'legendary', label: 'LEGENDARY', imgClosed: 'assets/legendary.png', imgOpen: 'assets/legendary_open.png', glow: '#f59e0b', prize: 'EXPLORILLS GENESIS ART', requires: 'PROMDRILLS',
+  { id: 'legendary', label: 'LEGENDARY', imgClosed: '/assets/legendary.png', imgOpen: '/assets/legendary_open.png', glow: '#f59e0b', prize: 'EXPLORILLS GENESIS ART', requires: 'PROMDRILLS',
     prizeLeftPct: 44.47, prizeTopPct: 21.10, lockLeftPct: 45.06, lockTopPct: 44.12 },
-  { id: 'mythic',    label: 'MYTHIC',    imgClosed: 'assets/mythic.png',    imgOpen: 'assets/mythic_open.png',    glow: '#ef4444', prize: 'EXPLORILLS GRAND PRIZE', requires: 'PROMDRILLS · CHRONICLES',
+  { id: 'mythic',    label: 'MYTHIC',    imgClosed: '/assets/mythic.png',    imgOpen: '/assets/mythic_open.png',    glow: '#ef4444', prize: 'EXPLORILLS GRAND PRIZE', requires: 'PROMDRILLS · CHRONICLES',
     prizeLeftPct: 46.13, prizeTopPct: 24.27, lockLeftPct: 46.54, lockTopPct: 46.64 },
 ];
 

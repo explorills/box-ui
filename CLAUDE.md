@@ -4,22 +4,58 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Running the app
 
-There is **no build step, no package manager, no tests, no lint**. React, ReactDOM, and Babel are vendored under `vendor/` and `<script type="text/babel">` compiles JSX in the browser.
+This is now a **Bun + Vite + React 19** project, mirroring the wiring pattern other ONE-ecosystem consumers use (`one-id`, `one-chat`, the archived `one-box`). There IS a build step.
 
-To preview, serve the directory statically (e.g. `python3 -m http.server 8765 --directory .`) and open the served URL — opening `index.html` from the file:// scheme works for most things but breaks audio (Web Audio context can be hostile under file://).
+```bash
+bun install         # PACKAGES_TOKEN env var required for @explorills scope
+bun run dev         # local dev server with HMR
+bun run build       # → dist/ for production
+bun run preview     # serve the production build locally
+bun run type-check  # tsc --noEmit
+```
 
-After any edit, hard-reload the browser. There is no source map; JSX errors surface as cryptic runtime exceptions, so check the console first when something silently breaks.
+The package `@explorills/one-ecosystem-ui` is hosted on GitHub Packages. `.npmrc` and `bunfig.toml` route the `@explorills` scope to `https://npm.pkg.github.com` and authenticate via the `PACKAGES_TOKEN` env var. The token is set at the explorills GitHub org level; for local installs, export it from your shell.
 
 ## Top-level wiring
 
-`index.html` loads, in order: vendored React, `config/chests.js`, `config/roles.js`, `audio/audio.js`, `tweaks-panel.jsx`, `carousel.jsx`, `app.jsx`. There are no modules — everything communicates through a small set of `window.*` globals that double as the backend integration surface:
+`index.html` is a normal Vite entry: it loads `/src/main.tsx`, which renders `<App />`. Everything is ES modules — no `window.*` globals.
 
-- `window.OneBoxConfig.CHESTS` / `window.OneBoxConfig.ROLES` — overridable data, set in `config/`.
-- `window.OneBoxAudio` — synthesized SFX, exposes `play(name)` / `setMuted` / `unlock`.
-- `window.OneBox` — the React component (mounted by `app.jsx`).
-- `window.useTweaks`, `window.Tweak*` — control-panel primitives.
+```
+src/
+├── main.tsx          — ReactDOM root; imports './main.css'
+├── App.tsx           — wraps content in OneIdProvider + EcosystemNavbar; mounts <OneBox> + <TweaksPanel>
+├── OneBox.tsx        — phase machine, 3D ring, prize/lock UI, RAF claim animation
+├── Tweaks.tsx        — Tweaks panel + production state container (useTweaks)
+├── audio.ts          — synthesized Web Audio cues
+├── config/chests.ts  — chest catalog with per-chest prize/lock geometry
+├── config/roles.ts   — role hierarchy with per-tier accents
+├── styles/tokens.css — neutral palette + per-project accents
+├── main.css          — all carousel/claim/transition styles
+├── assets/logo.png   — the consumer's project logo passed to EcosystemNavbar
+└── vite-env.d.ts     — Vite client + asset module declarations
+```
 
-A host that embeds this prototype can override any of these (especially `OneBoxConfig`) *before* the scripts run.
+`public/` holds untransformed static assets served at the URL root: chest PNGs at `/assets/`, font at `/fonts/`, plus `favicon.png`, `og-image.png`, `robots.txt`, `site.webmanifest`, `sitemap.xml`.
+
+## ONE-ecosystem consumer wiring
+
+`App.tsx` follows the standard ONE-ecosystem consumer shell:
+
+```tsx
+<OneIdProvider projectId={REOWN_PROJECT_ID} platformColor="#7c3aed">
+  <div style={{ display:'flex', flexDirection:'column', height:'100vh' }}>
+    <EcosystemNavbar logo={logo} projectName="box" themeColor="#7c3aed" currentDomain="box.expl.one" />
+    <main style={{ flex:1, position:'relative', overflow:'hidden' }}>
+      <OneBox tweaks={tweaks} />
+    </main>
+  </div>
+  <TweaksPanel>…</TweaksPanel>
+</OneIdProvider>
+```
+
+The brand constants (`PROJECT_NAME`, `THEME_COLOR`, `CURRENT_DOMAIN`, `REOWN_PROJECT_ID`) live at the top of `App.tsx` and match the values from the archived one-box repo. The carousel sits in a `flex: 1` `<main>` below the navbar — `.stage` was changed from `position: fixed` to `position: absolute` so it fills its parent instead of the viewport.
+
+**Important:** the consumer wiring is intentionally minimal. Wallet flows, profile pages, ecosystem navigation — all of that comes "for free" from `@explorills/one-ecosystem-ui`. Don't reimplement them inside box-ui.
 
 ## Phase machine (`carousel.jsx`)
 

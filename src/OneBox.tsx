@@ -15,21 +15,24 @@
  *     would be authoritative.
  *
  * Backend integration points:
- *   • CHESTS  ← window.OneBoxConfig.CHESTS  (config/chests.js)
- *   • ROLES   ← window.OneBoxConfig.ROLES   (config/roles.js)
- *   • Audio   ← window.OneBoxAudio          (audio/audio.js)
+ *   • CHESTS  ← imported from './config/chests'
+ *   • ROLES   ← imported from './config/roles'
+ *   • Audio   ← imported from './audio'
  *   • State   ← passed as `tweaks` prop from app.jsx
  *
  * Phase machine:
  *   idle → spinning → stopped → (eligible) shaking → opening → revealed → claiming → closing → idle
  *                              ↘ (locked) shaking-locked → locked-rest → (tap anywhere) → idle
  */
-const { useState, useEffect, useRef, useMemo, useCallback } = React;
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { CHESTS } from './config/chests';
+import { ROLES } from './config/roles';
+import { OneBoxAudio } from './audio';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-const sfx = (name) => {
-  if (window.OneBoxAudio && !window.OneBoxAudio.isMuted()) window.OneBoxAudio.play(name);
+const sfx = (name: string) => {
+  if (!OneBoxAudio.isMuted()) OneBoxAudio.play(name);
 };
 
 function uniqueLetters(word) {
@@ -310,11 +313,11 @@ function MainButton({ phase, connected, cooldownActive, cooldownLabel, isLockedR
 
 // ─── Main OneBox component ──────────────────────────────────────────────────
 
-function OneBox({ tweaks }) {
-  // Resolve backend-injectable data
-  const CHESTS = window.OneBoxConfig.CHESTS;
-  const ROLES = window.OneBoxConfig.ROLES;
-  const ROLE_BY_ID = useMemo(() => Object.fromEntries(ROLES.map((r) => [r.id, r])), [ROLES]);
+function OneBox({ tweaks }: { tweaks: any }) {
+  // Backend-injectable data is now ESM imports — replace the imports above
+  // with backend-fetched arrays at app boot if you need to hydrate from a
+  // server.
+  const ROLE_BY_ID = useMemo(() => Object.fromEntries(ROLES.map((r) => [r.id, r])), []);
 
   // Effective role (Guest if disconnected)
   const effectiveRoleId = tweaks.connected ? tweaks.role : 'GUEST';
@@ -345,7 +348,7 @@ function OneBox({ tweaks }) {
 
   // Audio mute sync
   useEffect(() => {
-    if (window.OneBoxAudio) window.OneBoxAudio.setMuted(!tweaks.audioEnabled);
+    OneBoxAudio.setMuted(!tweaks.audioEnabled);
   }, [tweaks.audioEnabled]);
 
   // ── Constants from tweaks ──────────────────────────────────────────────
@@ -524,7 +527,7 @@ function OneBox({ tweaks }) {
   // Spin trigger
   const spin = useCallback(() => {
     if (phase !== 'idle' || cooldownActive || phaseOverride !== 'AUTO') return;
-    if (window.OneBoxAudio) window.OneBoxAudio.unlock();
+    OneBoxAudio.unlock();
     sfx('spinPress');
     setMapOpen(false);
     setWinnerIdx(null);
@@ -735,7 +738,7 @@ function OneBox({ tweaks }) {
   }, [phaseOverride]);
 
   const onConnect = useCallback(() => {
-    if (window.OneBoxAudio) window.OneBoxAudio.unlock();
+    OneBoxAudio.unlock();
     sfx('claim');
   }, []);
 
@@ -868,7 +871,7 @@ function OneBox({ tweaks }) {
 
       {tweaks.connected && word && (
         <div className="letter-row">
-          <div className="letter-eyebrow">{word}</div>
+          <div className="letter-eyebrow">NEXT TIER · {word}</div>
           <div className="letter-slots">
             {letterSlots.map((s, i) => (
               <LetterGlyph key={i} ch={s.ch} revealed={s.collected} pulsing={s.pulsing} accent={roleAccent} />
@@ -1023,4 +1026,4 @@ function OneBox({ tweaks }) {
   );
 }
 
-window.OneBox = OneBox;
+export default OneBox;

@@ -1,0 +1,107 @@
+# robots.txt for ONE box - ONE Ecosystem
+# https://box.expl.one
+
+# ==========================================
+# ALLOW ALL SEARCH ENGINE CRAWLERS
+# ==========================================
+User-agent: *
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 2
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+# ==========================================
+# AI CRAWLERS - ALLOW ALL FOR MAXIMUM VISIBILITY
+# We are an open source project - we WANT AI discovery
+# ==========================================
+
+# OpenAI
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# Anthropic
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+# Google AI
+User-agent: Google-Extended
+Allow: /
+
+# Common Crawl (used by many AI systems)
+User-agent: CCBot
+Allow: /
+
+# Perplexity AI
+User-agent: PerplexityBot
+Allow: /
+
+# Cohere AI
+User-agent: cohere-ai
+Allow: /
+
+# Meta AI
+User-agent: FacebookBot
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+# Apple AI
+User-agent: Applebot
+Allow: /
+
+# Amazon AI
+User-agent: Amazonbot
+Allow: /
+
+# Other AI assistants
+User-agent: YouBot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+# ==========================================
+# SEO/ANALYSIS BOTS (Allow for monitoring)
+# ==========================================
+User-agent: AhrefsBot
+Allow: /
+
+User-agent: SemrushBot
+Allow: /
+
+User-agent: MJ12bot
+Allow: /
+
+# ==========================================
+# SITEMAP & AI DOCUMENTATION
+# ==========================================
+Sitemap: https://box.expl.one/sitemap.xml
+Host: https://box.expl.one
+
+# LLMs.txt - AI-readable documentation (https://llmstxt.org)
+LLMs-Txt: https://box.expl.one/llms.txt
+LLMs-Txt-Full: https://box.expl.one/llms-full.txt

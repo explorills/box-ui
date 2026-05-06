@@ -1,30 +1,52 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>one BOX — Mystery Box</title>
-  <link rel="icon" href="data:," />
-  <link rel="stylesheet" href="app.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Primary Meta Tags -->
+    <title>ONE box - Mystery Experience Platform | ONE ecosystem</title>
+    <meta name="title" content="ONE box - Mystery Experience Platform | ONE ecosystem" />
+    <meta name="description" content="Mystery experience platform within the ONE ecosystem. Spin the wheel, claim your prize, climb the tier ladder. Open source and community-driven." />
+    <meta name="keywords" content="ONE Box, mystery platform, ONE ecosystem, EXPL Nodes, Web3 community, decentralized, open source, community-driven, blockchain" />
+    <meta name="author" content="EXPL.ONE Team" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-video-preview:-1" />
+    <meta name="theme-color" content="#7c3aed" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="msapplication-TileColor" content="#7c3aed" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <link rel="canonical" href="https://box.expl.one/" />
+
+    <meta property="og:locale" content="en_US" />
+    <link rel="alternate" hreflang="en" href="https://box.expl.one/" />
+    <link rel="alternate" hreflang="x-default" href="https://box.expl.one/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://box.expl.one/" />
+    <meta property="og:site_name" content="ONE box" />
+    <meta property="og:title" content="ONE box - Mystery Experience Platform | ONE ecosystem" />
+    <meta property="og:description" content="Mystery experience platform within the ONE ecosystem. Spin the wheel, claim your prize, climb the tier ladder." />
+    <meta property="og:image" content="https://box.expl.one/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="ONE box - Mystery Experience Platform" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@explorills_main" />
+    <meta name="twitter:creator" content="@explorills_main" />
+    <meta name="twitter:url" content="https://box.expl.one/" />
+    <meta name="twitter:title" content="ONE box - Mystery Experience Platform" />
+    <meta name="twitter:description" content="Mystery experience platform within the ONE ecosystem." />
+    <meta name="twitter:image" content="https://box.expl.one/og-image.png" />
+    <meta name="twitter:image:alt" content="ONE box - Mystery Experience Platform" />
+
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
 </head>
 <body>
-  <div id="root"></div>
-
-  <!-- React + Babel runtime (vendored — no CDN required) -->
-  <script src="vendor/react.development.js"></script>
-  <script src="vendor/react-dom.development.js"></script>
-  <script src="vendor/babel.min.js"></script>
-
-  <!-- DATA — backend integration points (replace these or override window.OneBoxConfig before mount) -->
-  <script src="config/chests.js"></script>
-  <script src="config/roles.js"></script>
-
-  <!-- Audio + haptics module -->
-  <script src="audio/audio.js"></script>
-
-  <!-- UI -->
-  <script type="text/babel" src="tweaks-panel.jsx"></script>
-  <script type="text/babel" src="carousel.jsx"></script>
-  <script type="text/babel" src="app.jsx"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

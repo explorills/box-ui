@@ -1,0 +1,12 @@
+# Bun configuration — mirrors the pattern other ONE-ecosystem consumers use.
+# https://bun.sh/docs/runtime/bunfig
+
+[install]
+linker = "isolated"
+peer = true
+optional = true
+dev = true
+minimumReleaseAge = 0
+
+[install.scopes]
+"@explorills" = { registry = "https://npm.pkg.github.com" }

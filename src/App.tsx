@@ -1,18 +1,32 @@
-/* App entry — wires Tweaks panel + Carousel
+/* App entry — wires the ONE-ecosystem consumer chrome around the OneBox
+ * carousel. Same wiring pattern other consumers (one-id, one-chat, the
+ * archived one-box) use: an OneIdProvider context wraps an EcosystemNavbar
+ * (with the project's logo, name, theme color, and domain) and the page
+ * content. The carousel itself is unchanged from the prototype.
  *
- * Backend integration points:
- *   • config/chests.js     — replace CHESTS array
- *   • config/roles.js      — replace ROLES array
- *   • TWEAK_DEFAULTS below — initial UI state (all overridable from the host's Tweaks panel)
+ * Backend integration points (unchanged from the prototype):
+ *   • src/config/chests.ts — replace CHESTS array (or fetch at boot)
+ *   • src/config/roles.ts  — replace ROLES array
+ *   • TWEAK_DEFAULTS below — initial UI state (overridable from the
+ *     embedded host's Tweaks panel via __edit_mode_set_keys)
  *
- * The Tweaks panel is a DEV ONLY tool. In production, replace the tweaks state
- * with whatever your backend provides:
- *   - connected, username, role, collectedCount, lastRevealedIdx → user state
- *   - cooldownDays/Hours/Minutes → backend cooldown timer (UI doesn't tick it down,
- *     just renders whatever you pass)
- *   - spinOutcome / phaseOverride → DEV ONLY (force scenarios for QA / preview)
- *   - audioEnabled, mapDefaultOpen, sparkCount, etc. → user prefs
+ * The Tweaks panel is gated to staging + localhost only — see Tweaks.tsx
+ * PROD_HOSTS allowlist. On box.expl.one, the panel renders nothing.
  */
+import React from 'react';
+import { OneIdProvider, EcosystemNavbar } from '@explorills/one-ecosystem-ui';
+import logo from './assets/logo.png';
+import OneBox from './OneBox';
+import {
+  useTweaks, TweaksPanel, TweakSection,
+  TweakSlider, TweakToggle, TweakSelect, TweakText, TweakColor, TweakButton,
+} from './Tweaks';
+
+// EXPL ONE shared brand values — match other ecosystem consumers.
+const REOWN_PROJECT_ID = '1fe344d4623291d85ad7369cbc6d9ec8';
+const PROJECT_NAME = 'box';
+const THEME_COLOR = '#7c3aed';
+const CURRENT_DOMAIN = 'box.expl.one';
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "accent": "#7c3aed",
@@ -114,8 +128,18 @@ function App() {
   };
 
   return (
-    <>
-      <OneBox tweaks={tweaks} />
+    <OneIdProvider projectId={REOWN_PROJECT_ID} profilePath="/profile" platformColor={THEME_COLOR}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden' }}>
+        <EcosystemNavbar
+          logo={logo}
+          projectName={PROJECT_NAME}
+          themeColor={THEME_COLOR}
+          currentDomain={CURRENT_DOMAIN}
+        />
+        <main style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+          <OneBox tweaks={tweaks} />
+        </main>
+      </div>
       <TweaksPanel title="one BOX · Tweaks">
         <TweakSection label="Dev presets">
           {Object.entries(scenarios).map(([label, fn]) => (
@@ -187,8 +211,8 @@ function App() {
           <TweakToggle label="Open by default" value={tweaks.mapDefaultOpen} onChange={(v) => setTweak('mapDefaultOpen', v)} />
         </TweakSection>
       </TweaksPanel>
-    </>
+    </OneIdProvider>
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+export default App;
