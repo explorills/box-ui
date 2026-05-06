@@ -391,11 +391,18 @@ button { font-family: inherit; }
 .stage.is-guest .letter-row.letter-row-empty .map-toggle { margin-top: 0; }
 
 /* ============================================================
-   Map overlay
+   Map overlay — opens below the user pill (the trigger). Anchors at the
+   bottom of the top-bar so the pill itself stays fully visible / crisp,
+   never under the backdrop-filter blur. The clamp gives ~90–130px of
+   reserved space for tier-progress + pill + top-bar padding; mobile
+   shrinks the value (see @media block).
    ============================================================ */
 .map-overlay {
   position: absolute;
-  inset: 0;
+  top: clamp(90px, 14vh, 130px);
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: color-mix(in oklab, var(--bg-inset) 55%, transparent);
   backdrop-filter: blur(10px) saturate(0.85);
   -webkit-backdrop-filter: blur(10px) saturate(0.85);
@@ -403,7 +410,7 @@ button { font-family: inherit; }
   align-items: flex-start;
   justify-content: center;
   z-index: 40;
-  padding: 16px;
+  padding: 8px 16px 16px;
   animation: map-fade 220ms var(--ease-expo-out);
 }
 @keyframes map-fade { from { opacity: 0; } to { opacity: 1; } }
@@ -1271,6 +1278,9 @@ button { font-family: inherit; }
   .user-pill { min-width: 140px; padding: 6px 14px 7px; }
   .user-pill-name { font-size: 12px; }
   .user-pill-role { font-size: 9px; }
+  /* Pill is shorter on mobile — overlay starts higher to stay anchored
+     just below the badge instead of leaving a gap. */
+  .map-overlay { top: clamp(78px, 12vh, 110px); }
   .map-toggle { padding: 5px 11px; font-size: 9.5px; gap: 6px; }
   /* Mobile prize: tighten typography only — position is now per-chest and
      percentage-based so it stays correct across sizes without overrides. */
