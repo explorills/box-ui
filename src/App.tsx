@@ -14,7 +14,7 @@
  * PROD_HOSTS allowlist. On box.expl.one, the panel renders nothing.
  */
 import React from 'react';
-import { OneIdProvider, EcosystemNavbar } from '@explorills/one-ecosystem-ui';
+import { OneIdProvider, EcosystemNavbar, EcosystemFooter } from '@explorills/one-ecosystem-ui';
 import logo from './assets/logo.png';
 import OneBox from './OneBox';
 import {
@@ -129,16 +129,41 @@ function App() {
 
   return (
     <OneIdProvider projectId={REOWN_PROJECT_ID} profilePath="/profile" platformColor={THEME_COLOR}>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden' }}>
+      {/* Same shell as other ONE-ecosystem consumers (one-id, archived
+          one-box). EcosystemNavbar and EcosystemFooter are fixed-positioned
+          by the package, so we reserve their heights with padding-top/-bottom
+          on <main> (matching one-id's `pt-24 pb-14` = 96px / 56px).
+          The carousel is a single-screen experience — it must NEVER scroll
+          behind navbar or footer. The viewport-locked wrapper + non-scrolling
+          main + the inner relative container give OneBox an exact box to
+          fill between navbarBottom and footerTop. */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        width: '100vw',
+        overflow: 'hidden',
+      }}>
         <EcosystemNavbar
           logo={logo}
           projectName={PROJECT_NAME}
           themeColor={THEME_COLOR}
           currentDomain={CURRENT_DOMAIN}
         />
-        <main style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-          <OneBox tweaks={tweaks} />
+        <main style={{
+          flex: 1,
+          minHeight: 0,
+          paddingTop: 96,    // EcosystemNavbar reserved height
+          paddingBottom: 56, // EcosystemFooter reserved height
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+            <OneBox tweaks={tweaks} />
+          </div>
         </main>
+        <EcosystemFooter themeColor={THEME_COLOR} />
       </div>
       <TweaksPanel title="one BOX · Tweaks">
         <TweakSection label="Dev presets">
