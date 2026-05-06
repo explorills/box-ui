@@ -131,6 +131,25 @@ const __TWEAKS_STYLE = `
   .twk-swatch::-webkit-color-swatch-wrapper{padding:0}
   .twk-swatch::-webkit-color-swatch{border:0;border-radius:5.5px}
   .twk-swatch::-moz-color-swatch{border:0;border-radius:5.5px}
+
+  /* Standalone-mode FAB — only rendered when there's no embedding host.
+     Lets the developer reopen the panel after dismissing it. */
+  .twk-fab{position:fixed;right:16px;bottom:16px;z-index:2147483645;
+    appearance:none;border:0;cursor:pointer;
+    width:44px;height:44px;border-radius:999px;
+    background:rgba(20,18,28,0.9);color:#fff;
+    font:600 11px/1 ui-sans-serif,system-ui,-apple-system,sans-serif;
+    letter-spacing:0.16em;
+    box-shadow:0 1px 0 rgba(255,255,255,0.08) inset,
+               0 8px 22px rgba(0,0,0,0.45),
+               0 0 0 1px rgba(255,255,255,0.08);
+    -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+    transition:transform 150ms,box-shadow 150ms,background 150ms}
+  .twk-fab:hover{background:rgba(30,26,40,0.95);transform:translateY(-1px);
+    box-shadow:0 1px 0 rgba(255,255,255,0.12) inset,
+               0 12px 28px rgba(0,0,0,0.55),
+               0 0 0 1px rgba(255,255,255,0.14)}
+  .twk-fab:active{transform:translateY(0)}
 `;
 
 // ── useTweaks ───────────────────────────────────────────────────────────────
@@ -158,7 +177,12 @@ function useTweaks(defaults) {
 // flips off in lockstep; the host echoes __deactivate_edit_mode back which
 // is what actually hides the panel.
 function TweaksPanel({ title = 'Tweaks', children }) {
-  const [open, setOpen] = React.useState(false);
+  // Standalone = no embedding host. In that mode the host's __activate_edit_mode
+  // message will never arrive, so the dev panel was effectively invisible. We
+  // detect standalone via window.parent === window and open the panel by
+  // default; a floating FAB lets it be reopened after dismissal.
+  const isStandalone = typeof window !== 'undefined' && window.parent === window;
+  const [open, setOpen] = React.useState(isStandalone);
   const dragRef = React.useRef(null);
   const offsetRef = React.useRef({ x: 16, y: 16 });
   const PAD = 16;
@@ -205,6 +229,20 @@ function TweaksPanel({ title = 'Tweaks', children }) {
     window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*');
   };
 
+  // Standalone FAB: reopens the panel after the user closes it. Embedded
+  // hosts have their own toolbar toggle, so we hide the FAB there.
+  const fab = isStandalone && !open ? (
+    <>
+      <style>{__TWEAKS_STYLE}</style>
+      <button
+        type="button"
+        className="twk-fab"
+        aria-label="Open dev panel"
+        onClick={() => setOpen(true)}
+      >DEV</button>
+    </>
+  ) : null;
+
   const onDragStart = (e) => {
     const panel = dragRef.current;
     if (!panel) return;
@@ -227,7 +265,7 @@ function TweaksPanel({ title = 'Tweaks', children }) {
     window.addEventListener('mouseup', up);
   };
 
-  if (!open) return null;
+  if (!open) return fab;
   return (
     <>
       <style>{__TWEAKS_STYLE}</style>

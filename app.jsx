@@ -26,10 +26,10 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "cooldownDays": 0,
   "cooldownHours": 0,
   "cooldownMinutes": 0,
-  "ringRadius": 290,
+  "ringRadius": 360,
   "idleSpeed": 22,
-  "sparkCount": 22,
-  "openCrossfade": 450,
+  "sparkCount": 48,
+  "openCrossfade": 200,
   "shakeIntensity": 10,
   "mapDefaultOpen": false,
   "audioEnabled": true
@@ -70,12 +70,35 @@ function App() {
   }, [tweaks.accent]);
 
   // ── Dev scenario presets ─────────────────────────────────────────────
+  const ROLE_LADDER = ['GUEST', 'EXPLORILLS', 'RENDRILLS', 'PROMDRILLS', 'PROMDRILLS_CHRONICLES'];
+  const CHEST_IDS   = ['COMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC'];
+
+  const bumpRole = (delta) => {
+    const i = Math.max(0, ROLE_LADDER.indexOf(tweaks.role));
+    const next = ROLE_LADDER[Math.max(0, Math.min(ROLE_LADDER.length - 1, i + delta))];
+    setTweak({ role: next, connected: next !== 'GUEST' });
+  };
+
+  const openAnyBox = (chestId) => setTweak({
+    phaseOverride: 'REVEALED', spinOutcome: chestId,
+    cooldownDays: 0, cooldownHours: 0, cooldownMinutes: 0,
+    connected: true,
+  });
+
+  const lockAnyBox = (chestId) => setTweak({
+    phaseOverride: 'LOCKED-SHAKE', spinOutcome: chestId,
+    cooldownDays: 0, cooldownHours: 0, cooldownMinutes: 0,
+    connected: true,
+  });
+
+  const reset = () => setTweak({
+    phaseOverride: 'AUTO', spinOutcome: 'AUTO',
+    cooldownDays: 0, cooldownHours: 0, cooldownMinutes: 0,
+    connected: true,
+  });
+
   const scenarios = {
-    'Reset (active)': () => setTweak({
-      phaseOverride: 'AUTO', spinOutcome: 'AUTO',
-      cooldownDays: 0, cooldownHours: 0, cooldownMinutes: 0,
-      connected: true, role: 'EXPLORILLS',
-    }),
+    'Reset': reset,
     'Spinning': () => setTweak({ phaseOverride: 'SPINNING' }),
     'Cooldown 6d 12h 30m': () => setTweak({
       phaseOverride: 'COOLDOWN', cooldownDays: 6, cooldownHours: 12, cooldownMinutes: 30,
@@ -83,19 +106,7 @@ function App() {
     'Cooldown 0d 2h 14m': () => setTweak({
       phaseOverride: 'COOLDOWN', cooldownDays: 0, cooldownHours: 2, cooldownMinutes: 14,
     }),
-    'Locked: Mythic for EXPLORILLS': () => setTweak({
-      phaseOverride: 'LOCKED-SHAKE', spinOutcome: 'MYTHIC', role: 'EXPLORILLS',
-      cooldownDays: 0, cooldownHours: 0, cooldownMinutes: 0,
-    }),
-    'Won: Rare for EXPLORILLS': () => setTweak({
-      phaseOverride: 'REVEALED', spinOutcome: 'RARE', role: 'EXPLORILLS',
-      cooldownDays: 0, cooldownHours: 0, cooldownMinutes: 0,
-    }),
-    'Won: Mythic for +CHRONICLES': () => setTweak({
-      phaseOverride: 'REVEALED', spinOutcome: 'MYTHIC', role: 'PROMDRILLS_CHRONICLES',
-      cooldownDays: 0, cooldownHours: 0, cooldownMinutes: 0,
-    }),
-    'Disconnected (CONNECT)': () => setTweak({
+    'Disconnected': () => setTweak({
       connected: false, phaseOverride: 'AUTO', spinOutcome: 'AUTO',
       cooldownDays: 0, cooldownHours: 0, cooldownMinutes: 0,
     }),
@@ -109,6 +120,24 @@ function App() {
           {Object.entries(scenarios).map(([label, fn]) => (
             <TweakButton key={label} label={label} onClick={fn} secondary />
           ))}
+        </TweakSection>
+
+        <TweakSection label="Inject: open box">
+          {CHEST_IDS.map((id) => (
+            <TweakButton key={`o-${id}`} label={`Open ${id}`} onClick={() => openAnyBox(id)} secondary />
+          ))}
+        </TweakSection>
+
+        <TweakSection label="Inject: lock box">
+          {CHEST_IDS.map((id) => (
+            <TweakButton key={`l-${id}`} label={`Lock ${id}`} onClick={() => lockAnyBox(id)} secondary />
+          ))}
+        </TweakSection>
+
+        <TweakSection label="Inject: bump role">
+          <TweakButton label="Role -1" onClick={() => bumpRole(-1)} secondary />
+          <TweakButton label="Role +1 (promote)" onClick={() => bumpRole(+1)} secondary />
+          <TweakButton label="Top tier (CHRONICLES)" onClick={() => setTweak({ role: 'PROMDRILLS_CHRONICLES', connected: true })} secondary />
         </TweakSection>
 
         <TweakSection label="Theme">

@@ -8,6 +8,11 @@
  *     (or by calling props.onSpin and resolving with a fixed index later)
  *   • No real letter award — `collectedCount` is the only signal; backend
  *     advances it by however much it wants
+ *   • No real spin physics — the accel/cruise/decel curve is generated
+ *     locally from a seed for preview only. The shape of `SpinPlan` (below)
+ *     IS the contract: the backend produces one of these, signs it, and
+ *     hands it to the UI. The frontend never invents speed values that
+ *     would be authoritative.
  *
  * Backend integration points:
  *   • CHESTS  ← window.OneBoxConfig.CHESTS  (config/chests.js)
@@ -43,10 +48,122 @@ function fmtCooldown(d, h, m) {
   return parts.join(' ');
 }
 
+// ─── Spin plan ──────────────────────────────────────────────────────────────
+// BACKEND CONTRACT: the server returns a SpinPlan describing the entire spin.
+// Acceleration, cruise, deceleration, peak speed and final winner are all
+// authoritative server values. The frontend integrates them deterministically
+// — it never invents speeds. To keep this prototype interactive, we generate
+// a plan locally; replace `makeLocalSpinPlan()` with a fetch().
+//
+//   accelMs    — milliseconds of acceleration (0 → peakDegPerSec)
+//   cruiseMs   — milliseconds at peak speed
+//   decelMs    — milliseconds of deceleration (peak → 0)
+//   peakDegPerSec — angular velocity at the top of the curve
+//   chosenIdx  — final winner index in CHESTS
+//
+// The integral of the velocity curve gives the total angle swept; we add a
+// rotation correction so we still land on `chosenIdx` even though duration
+// and peak vary per spin.
+function makeLocalSpinPlan(chestCount, forcedIdx) {
+  const accelMs  = 1100 + Math.random() * 700;     // 1.1 – 1.8s ramp up
+  const cruiseMs =  900 + Math.random() * 900;     // 0.9 – 1.8s top speed
+  const decelMs  = 2200 + Math.random() * 1200;    // 2.2 – 3.4s glide down
+  const peak     = 720  + Math.random() * 360;     // 720 – 1080 deg/s
+  const chosenIdx = forcedIdx != null && forcedIdx >= 0
+    ? forcedIdx
+    : Math.floor(Math.random() * chestCount);
+  return { accelMs, cruiseMs, decelMs, peakDegPerSec: peak, chosenIdx };
+}
+
+// Velocity at time t (ms), normalized to peak=1. Smoothstep easing so accel
+// and decel feel mechanical rather than linear.
+function spinVelocityAt(t, plan) {
+  const { accelMs, cruiseMs, decelMs } = plan;
+  if (t <= 0) return 0;
+  if (t < accelMs) {
+    const r = t / accelMs;
+    return r * r * (3 - 2 * r);                    // smoothstep
+  }
+  if (t < accelMs + cruiseMs) return 1;
+  const tail = t - accelMs - cruiseMs;
+  if (tail >= decelMs) return 0;
+  const r = 1 - tail / decelMs;
+  return r * r * (3 - 2 * r);
+}
+
+// Total integral of velocity*peak over the whole spin in degrees.
+function spinTotalDegrees(plan) {
+  // smoothstep integral over [0,1] is 0.5 → halves of accel and decel.
+  const cruiseDeg = plan.cruiseMs * plan.peakDegPerSec / 1000;
+  const accelDeg  = plan.accelMs  * plan.peakDegPerSec / 1000 * 0.5;
+  const decelDeg  = plan.decelMs  * plan.peakDegPerSec / 1000 * 0.5;
+  return accelDeg + cruiseDeg + decelDeg;
+}
+
 // ─── Hourglass icon ─────────────────────────────────────────────────────────
 
 function HourglassIcon() {
   return <span className="hourglass" aria-hidden="true" />;
+}
+
+// ─── Gamified letter glyph ──────────────────────────────────────────────────
+// Renders a letter as a stylized SVG token. Each letter gets a deterministic
+// hue derived from its char code so the alphabet feels colorful but stable.
+// Replace `accent` to override.
+function LetterGlyph({ ch, revealed, pulsing, accent }) {
+  const code = (ch || '?').toUpperCase().charCodeAt(0);
+  const hue = (code * 47) % 360;
+  const fillA = accent || `hsl(${hue}, 70%, 62%)`;
+  const fillB = accent
+    ? `color-mix(in oklab, ${accent} 35%, black)`
+    : `hsl(${(hue + 24) % 360}, 65%, 38%)`;
+  const empty = !revealed;
+  return (
+    <span className={`letter-tile ${revealed ? 'is-revealed' : ''} ${pulsing ? 'is-pulsing' : ''}`}>
+      <svg viewBox="0 0 36 40" aria-hidden="true">
+        <defs>
+          <linearGradient id={`lg-${code}`} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stopColor={fillA} />
+            <stop offset="1" stopColor={fillB} />
+          </linearGradient>
+          <filter id={`lf-${code}`} x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="0.6" />
+          </filter>
+        </defs>
+        <polygon
+          points="3,6 33,6 30,36 6,36"
+          fill={empty ? 'transparent' : `url(#lg-${code})`}
+          stroke={empty ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.35)'}
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        />
+        <polygon
+          points="3,6 33,6 30,36 6,36"
+          fill="none"
+          stroke={empty ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.55)'}
+          strokeWidth="0.6"
+          transform="translate(0,2) scale(1,0.92)"
+        />
+        {!empty && (
+          <text
+            x="18" y="27"
+            textAnchor="middle"
+            fontFamily="'Space Grotesk', system-ui, sans-serif"
+            fontWeight="800"
+            fontSize="20"
+            fill="white"
+            filter={`url(#lf-${code})`}
+            style={{ paintOrder: 'stroke', stroke: 'rgba(0,0,0,0.4)', strokeWidth: 0.8 }}
+          >
+            {ch}
+          </text>
+        )}
+        {empty && (
+          <line x1="12" y1="22" x2="24" y2="22" stroke="rgba(255,255,255,0.25)" strokeWidth="1.6" strokeLinecap="round" />
+        )}
+      </svg>
+    </span>
+  );
 }
 
 // ─── Map tier row (drawer content) ──────────────────────────────────────────
@@ -55,20 +172,60 @@ function MapTier({ title, subtitle, chests, highlight }) {
   return (
     <div className={`map-tier ${highlight ? 'is-current' : ''}`}>
       <div className="map-tier-head">
+        {highlight && <span className="map-tier-badge">YOU</span>}
         <span className="map-tier-name">{title}</span>
         {subtitle && <span className="map-tier-sub">{subtitle}</span>}
-        {highlight && <span className="map-tier-badge">YOU</span>}
       </div>
       <div className="map-tier-body">
-        {chests.map((c) => (
-          <div className="map-row" key={c.id} style={{ '--c': c.glow }}>
-            <span className="map-chest">
-              <span className="map-swatch" />
-              {c.label}
-            </span>
-            <span className="map-prize">{c.prize}</span>
-          </div>
-        ))}
+        {chests.map((c) => {
+          // Inside the map, "HIDDEN LETTER" is too vague — call out the
+          // actual progression payoff instead.
+          const prizeText = /HIDDEN\s+LETTER/i.test(c.prize)
+            ? 'LETTER TO UNLOCK NEXT TIER!'
+            : c.prize;
+          return (
+            <div className="map-row" key={c.id} style={{ '--c': c.glow }}>
+              <span className="map-chest">
+                <span className="map-swatch" />
+                {c.label}
+              </span>
+              <span className="map-prize">{prizeText}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Speed bar ──────────────────────────────────────────────────────────────
+// Real-speed visualization of the carousel.
+//   • The numeric readout is the actual angular velocity in deg/s — 1:1
+//     with what the ring is rotating at right now.
+//   • The right edge of the bar is the PEAK velocity reached this spin,
+//     not a fixed ceiling. As the spin accelerates, peak grows; the
+//     fill rides the right edge. Once decel starts, peak holds at the
+//     right edge while the fill recedes — leaving a visible "peak line".
+function SpeedBar({ current, peak, active }) {
+  const peakKnown = peak > 0;
+  const ratio = peakKnown ? Math.min(1, current / peak) : 0;
+  return (
+    <div className={`speed-bar ${active || peakKnown ? 'is-active' : ''}`} aria-hidden="true">
+      <div className="speed-bar-track">
+        <div className="speed-bar-fill" style={{ width: `${ratio * 100}%` }} />
+        {peakKnown && <div className="speed-bar-peak" />}
+      </div>
+      <div className="speed-bar-label">
+        <span>
+          <span className="speed-bar-key">SPEED</span>{' '}
+          <span className="speed-bar-val">{Math.round(current)}</span>
+          <span className="speed-bar-unit">°/s</span>
+        </span>
+        <span>
+          <span className="speed-bar-key">PEAK</span>{' '}
+          <span className="speed-bar-peak-val">{Math.round(peak)}</span>
+          <span className="speed-bar-unit">°/s</span>
+        </span>
       </div>
     </div>
   );
@@ -91,8 +248,8 @@ function MainButton({ phase, connected, cooldownActive, cooldownLabel, isLockedR
     return (
       <button className="main-btn is-cooldown" disabled type="button">
         <span className="label-row">
-          <HourglassIcon />
           TRY AGAIN IN {cooldownLabel}
+          <HourglassIcon />
         </span>
       </button>
     );
@@ -121,7 +278,6 @@ function MainButton({ phase, connected, cooldownActive, cooldownLabel, isLockedR
   else if (phase === 'opening') label = 'OPENING!';
   else if (phase === 'revealed' && isLockedReveal) label = 'LOCKED';
   else if (phase === 'claiming') label = 'CLAIMING…';
-  else if (phase === 'closing') label = 'CLOSING…';
   return (
     <button className="main-btn" disabled type="button">
       <span className="label-row">
@@ -144,6 +300,7 @@ function OneBox({ tweaks }) {
   const effectiveRoleId = tweaks.connected ? tweaks.role : 'GUEST';
   const role = ROLE_BY_ID[effectiveRoleId] || ROLES[0];
   const userMaxIdx = role.maxIdx;
+  const roleAccent = role.accent || tweaks.accent;
 
   // ── Local state ────────────────────────────────────────────────────────
   const [phase, setPhase] = useState('idle');
@@ -151,13 +308,18 @@ function OneBox({ tweaks }) {
   const [ringAngle, setRingAngle] = useState(0);
   const [opens, setOpens] = useState(0);
   const [mapOpen, setMapOpen] = useState(false);
+  // Real angular speed of the ring during spin: deg/s. `peak` is the maximum
+  // value seen so far this spin — the bar's "right edge" as it grows. The bar
+  // visualization uses current/peak so the right edge is always the latest peak.
+  const [speed, setSpeed] = useState({ current: 0, peak: 0 });
+  const [pillPulse, setPillPulse] = useState(0);    // bumps to retrigger pill bubble
 
   const stateRef = useRef({ angle: 0 });
-  const spinTargetRef = useRef(null);
+  const spinPlanRef = useRef(null);
   const pillRef = useRef(null);
   const prizeTextRef = useRef(null);
   const lastTickRef = useRef(0);
-  const idleStartedAtRef = useRef(0);  // for smooth ramp-up of idle drift
+  const idleStartedAtRef = useRef(0);
 
   useEffect(() => { if (tweaks.mapDefaultOpen) setMapOpen(true); }, []); // eslint-disable-line
 
@@ -216,10 +378,9 @@ function OneBox({ tweaks }) {
     if (!idleStartedAtRef.current) idleStartedAtRef.current = last;
     const tick = (now) => {
       const dt = (now - last) / 1000; last = now;
-      // Smooth ramp from 0→1 over 1.0s after entering idle
       const elapsed = (now - idleStartedAtRef.current) / 1000;
       const ramp = Math.min(1, elapsed / 1.0);
-      const eased = ramp * ramp * (3 - 2 * ramp); // smoothstep
+      const eased = ramp * ramp * (3 - 2 * ramp);
       stateRef.current.angle = (stateRef.current.angle + idleSpeed * eased * dt) % 360;
       setRingAngle(stateRef.current.angle);
       raf = requestAnimationFrame(tick);
@@ -228,7 +389,6 @@ function OneBox({ tweaks }) {
     return () => cancelAnimationFrame(raf);
   }, [isIdleDrift, idleSpeed]);
 
-  // Reset ramp timer every time phase enters idle
   useEffect(() => {
     if (phase === 'idle') idleStartedAtRef.current = performance.now();
   }, [phase]);
@@ -257,33 +417,61 @@ function OneBox({ tweaks }) {
     setRingAngle(target);
   }, [phaseOverride, overrideWinnerIdx, SLOT_DEG]);
 
-  // Spin-to-target (with setTimeout backup so headless / stalled RAF still finishes)
+  // Spin-to-target driven by SpinPlan (accel → cruise → decel)
   useEffect(() => {
-    if (!isSpinTarget || !spinTargetRef.current) return;
-    const { startAngle, totalDelta, totalDuration, chosen } = spinTargetRef.current;
+    if (!isSpinTarget || !spinPlanRef.current) return;
+    const { plan, startAngle, totalAngle, totalMs, chosen } = spinPlanRef.current;
     const t0 = performance.now();
-    const ease = (t) => 1 - Math.pow(1 - t, 3.5);
     let raf;
+    let lastIntegralDeg = 0;
+    let lastT = 0;
     const tick = (now) => {
-      const t = Math.min(1, (now - t0) / totalDuration);
-      const a = startAngle + totalDelta * ease(t);
-      stateRef.current.angle = a;
-      setRingAngle(a);
-      const turn = Math.floor(a / 30);
-      if (turn !== lastTickRef.current && t < 0.92) {
+      const t = Math.min(totalMs, now - t0);
+      // Integrate velocity from lastT to t to advance the angle.
+      const steps = 4;
+      const dt = (t - lastT) / steps;
+      let dDeg = 0;
+      for (let i = 0; i < steps; i++) {
+        const ti = lastT + dt * (i + 0.5);
+        dDeg += spinVelocityAt(ti, plan) * plan.peakDegPerSec * (dt / 1000);
+      }
+      lastIntegralDeg += dDeg;
+      lastT = t;
+      // Scale so we land exactly on `totalAngle` regardless of integration drift.
+      const totalIntegral = spinTotalDegrees(plan);
+      const scale = totalAngle / totalIntegral;
+      const angle = startAngle + lastIntegralDeg * scale;
+      stateRef.current.angle = angle;
+      setRingAngle(angle);
+      const v = spinVelocityAt(t, plan);
+      // `realSpeed` matches the angular velocity actually being applied to
+      // the ring after the integration-correction `scale` factor — so the
+      // number on screen is 1:1 with the visible rotation.
+      const realSpeed = v * plan.peakDegPerSec * scale;
+      setSpeed((prev) => ({
+        current: realSpeed,
+        peak: Math.max(prev.peak, realSpeed),
+      }));
+      const turn = Math.floor(angle / 30);
+      if (turn !== lastTickRef.current && t < totalMs * 0.92) {
         lastTickRef.current = turn;
         sfx('tick');
       }
-      if (t < 1) raf = requestAnimationFrame(tick);
+      if (t < totalMs) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     const timer = setTimeout(() => {
-      stateRef.current.angle = startAngle + totalDelta;
+      stateRef.current.angle = startAngle + totalAngle;
       setRingAngle(stateRef.current.angle);
+      // Keep the peak visible; current drops to 0 so the bar shows the
+      // peak-marker at the right edge with empty fill — what we just spun at.
+      setSpeed((prev) => ({ current: 0, peak: prev.peak }));
       setWinnerIdx(chosen);
       setPhase('stopped');
-      sfx('settle');
-    }, totalDuration + 30);
+      // No sound here. Per spec, "no extra blip when the spin finishes" —
+      // the next dedicated cue (win or lock) is the single sound for that
+      // action. The tick stream stops naturally because t > totalMs * 0.92.
+    }, totalMs + 30);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(timer);
@@ -297,28 +485,30 @@ function OneBox({ tweaks }) {
     sfx('spinPress');
     setMapOpen(false);
     setWinnerIdx(null);
+    // Reset both peak and current — a fresh spin starts the bar empty and
+    // the right-edge peak marker grows from zero.
+    setSpeed({ current: 0, peak: 0 });
 
-    // BACKEND POINT: replace this random pick with the real outcome from your
-    // server. If `tweaks.spinOutcome` is set (dev mode), it forces an outcome.
+    // BACKEND POINT: replace makeLocalSpinPlan with a server fetch. The plan
+    // is authoritative — speed, duration, winner are all server-decided.
     const forced = (tweaks.spinOutcome || 'AUTO').toUpperCase();
-    let chosen;
-    if (forced !== 'AUTO') {
-      chosen = CHESTS.findIndex((c) => c.id.toUpperCase() === forced);
-      if (chosen < 0) chosen = Math.floor(Math.random() * CHESTS.length);
-    } else {
-      chosen = Math.floor(Math.random() * CHESTS.length);
-    }
+    const forcedIdx = forced === 'AUTO' ? null : CHESTS.findIndex((c) => c.id.toUpperCase() === forced);
+    const plan = makeLocalSpinPlan(CHESTS.length, forcedIdx);
+    const chosen = plan.chosenIdx;
 
     const baseTarget = ((-chosen * SLOT_DEG) % 360 + 360) % 360;
-    const extraSpins = 4 + Math.floor(Math.random() * 3);
     const startAngle = stateRef.current.angle;
     const startMod = ((startAngle % 360) + 360) % 360;
-    let delta = baseTarget - startMod;
-    if (delta < 0) delta += 360;
-    const totalDelta = extraSpins * 360 + delta;
-    const totalDuration = 3800 + Math.random() * 600;
+    let landing = baseTarget - startMod;
+    if (landing < 0) landing += 360;
+    // total angle = enough full turns so the integrated curve roughly matches,
+    // then add the remaining `landing` so we end exactly on the winner.
+    const naturalDeg = spinTotalDegrees(plan);
+    const fullTurns = Math.max(2, Math.round((naturalDeg - landing) / 360));
+    const totalAngle = fullTurns * 360 + landing;
+    const totalMs = plan.accelMs + plan.cruiseMs + plan.decelMs;
 
-    spinTargetRef.current = { startAngle, totalDelta, totalDuration, chosen };
+    spinPlanRef.current = { plan, startAngle, totalAngle, totalMs, chosen };
     setPhase('spinning');
   }, [phase, cooldownActive, phaseOverride, tweaks.spinOutcome, SLOT_DEG, CHESTS]);
 
@@ -329,7 +519,10 @@ function OneBox({ tweaks }) {
       const isLocked = winnerIdx != null && winnerIdx > userMaxIdx;
       const t = setTimeout(() => {
         setPhase(isLocked ? 'shaking-locked' : 'shaking');
-        sfx(isLocked ? 'lock' : 'spinPress');
+        // Locked path gets its dedicated 'lock' cue here; the eligible path
+        // stays silent and the 'win' cue fires alone when the chest opens.
+        // One sound per action, no overlap with the prior spin-tick stream.
+        if (isLocked) sfx('lock');
       }, 350);
       return () => clearTimeout(t);
     }
@@ -345,18 +538,8 @@ function OneBox({ tweaks }) {
       return () => clearTimeout(t);
     }
     if (phase === 'shaking-locked') {
-      // After the lock-shake animation finishes, freeze in 'locked-rest'.
-      // No auto-resume — user must tap anywhere on the stage.
-      const t = setTimeout(() => setPhase('locked-rest'), 1500);
-      return () => clearTimeout(t);
-    }
-    if (phase === 'closing') {
-      const t = setTimeout(() => {
-        setPhase('idle');
-        setWinnerIdx(null);
-        setOpens((n) => n + 1);
-        sfx('close');
-      }, 700);
+      // 25% of the previous duration — vibration is fast/alive, not a long tilt
+      const t = setTimeout(() => setPhase('locked-rest'), 375);
       return () => clearTimeout(t);
     }
   }, [phase, phaseOverride, winnerIdx, userMaxIdx]);
@@ -365,14 +548,11 @@ function OneBox({ tweaks }) {
   useEffect(() => {
     if (phase !== 'locked-rest' || phaseOverride !== 'AUTO') return;
     const handler = (e) => {
-      // Ignore taps inside the Tweaks panel (dev tooling) so devs can keep
-      // editing tweaks without losing the locked state for inspection.
       if (e.target && e.target.closest && e.target.closest('.twk-panel')) return;
       setPhase('idle');
       setWinnerIdx(null);
       sfx('settle');
     };
-    // Small delay so the click that landed here doesn't immediately resume
     const id = setTimeout(() => {
       document.addEventListener('pointerdown', handler);
     }, 250);
@@ -382,7 +562,16 @@ function OneBox({ tweaks }) {
     };
   }, [phase, phaseOverride]);
 
-  // Claim flow
+  // Claim flow — prize merges into the user pill while the chest closes and
+  // recedes back into the cycle, all in lockstep. The 'claiming' phase owns
+  // every visual: prize-fly, lid-close, winner-recede (scale 1.32 → 1.0),
+  // non-winners returning to full opacity. After the animation we go straight
+  // to idle and the carousel resumes its drift.
+  // Prize-fly duration: matches the @keyframes prize-fly in app.css. The fly
+  // lands AT the pill at 100% (no overshoot), and the bubble bump is fired
+  // at the exact same moment so "merge" and "feedback" coincide.
+  const PRIZE_FLY_MS = 600;
+  const CLAIM_MS = PRIZE_FLY_MS + 140; // small tail so the chest finishes receding
   const onClaim = useCallback(() => {
     if (phaseOverride !== 'AUTO') return;
     sfx('claim');
@@ -402,11 +591,21 @@ function OneBox({ tweaks }) {
       }
     }
     setPhase('claiming');
-    setTimeout(() => setPhase('closing'), 700);
+    // Pill bubble fires at the EXACT moment the prize finishes its trip and
+    // disappears at the pill — that simultaneity is the "merge" feedback.
+    setTimeout(() => {
+      setPillPulse((n) => n + 1);
+      sfx('merge');
+    }, PRIZE_FLY_MS);
+    setTimeout(() => {
+      sfx('close');
+      setPhase('idle');
+      setWinnerIdx(null);
+      setOpens((n) => n + 1);
+    }, CLAIM_MS);
   }, [phaseOverride]);
 
   const onConnect = useCallback(() => {
-    // BACKEND POINT: open auth/wallet flow. UI stub only.
     if (window.OneBoxAudio) window.OneBoxAudio.unlock();
     sfx('claim');
   }, []);
@@ -431,7 +630,7 @@ function OneBox({ tweaks }) {
     ? (role.id === 'PROMDRILLS_CHRONICLES' ? 100 : 0)
     : (collectedCount / wordUnique.length) * 100;
 
-  // Front-of-ring detection (for label highlight, not used now since labels are always on)
+  // Front-of-ring detection
   const frontIdx = useMemo(() => {
     const a = ((-ringAngle) % 360 + 360) % 360;
     return Math.round(a / SLOT_DEG) % CHESTS.length;
@@ -460,73 +659,108 @@ function OneBox({ tweaks }) {
     'ring',
     (renderPhase === 'spinning' || renderPhase === 'spinning-override') && 'is-spinning',
     renderPhase === 'spinning-override' && 'is-override-spin',
-    (['stopped', 'shaking', 'opening', 'revealed', 'claiming', 'shaking-locked', 'locked-rest', 'closing'].includes(renderPhase)) && 'is-revealing',
+    (['stopped', 'shaking', 'opening', 'revealed', 'claiming', 'shaking-locked', 'locked-rest'].includes(renderPhase)) && 'is-revealing',
     renderPhase === 'shaking' && 'is-shaking',
     renderPhase === 'opening' && 'is-opening',
     (renderPhase === 'revealed' || renderPhase === 'claiming') && 'is-revealed',
     (renderPhase === 'shaking-locked' || renderPhase === 'locked-rest') && 'is-shaking-locked',
     renderPhase === 'locked-rest' && 'is-locked-rest',
     renderPhase === 'claiming' && 'is-claiming',
-    renderPhase === 'closing' && 'is-closing',
   ].filter(Boolean).join(' ');
 
   const winnerChest = renderWinnerIdx != null ? CHESTS[renderWinnerIdx] : null;
   const accentInUse = winnerChest && ['stopped', 'shaking', 'opening', 'revealed', 'claiming', 'shaking-locked', 'locked-rest'].includes(renderPhase)
     ? winnerChest.glow
-    : 'var(--accent)';
+    : roleAccent;
 
   const showPrize = winnerChest && !isLockedReveal &&
-    ['opening', 'revealed', 'claiming', 'closing'].includes(renderPhase);
+    ['opening', 'revealed', 'claiming'].includes(renderPhase);
 
-  const showLockChip = isLockedReveal && winnerChest && (renderPhase === 'shaking-locked' || renderPhase === 'locked-rest');
+  const isHiddenLetter = winnerChest && /HIDDEN\s+LETTER/i.test(winnerChest.prize || '');
+  // Pick the first uncollected letter as the "freshly awarded" letter for the
+  // prize panel; if all letters are collected (or there's no word), fall back
+  // to a random letter from the word for visual flair.
+  const awardedLetter = useMemo(() => {
+    if (!isHiddenLetter || !word) return null;
+    const remaining = wordUnique.filter((c) => !collectedSet.has(c));
+    if (remaining.length) return remaining[0];
+    return wordUnique[Math.floor(Math.random() * wordUnique.length)] || null;
+  }, [isHiddenLetter, word, wordUnique, collectedSet]);
+
+  const isSpinningPhase = renderPhase === 'spinning' || renderPhase === 'spinning-override';
 
   return (
     <div
-      className={`stage ${tweaks.connected ? 'is-connected' : 'is-guest'} ${mapOpen ? 'is-map-open' : ''}`}
+      className={`stage ${tweaks.connected ? 'is-connected' : 'is-guest'} ${mapOpen ? 'is-map-open' : ''} ${role.shiny ? 'is-shiny-role' : ''}`}
       style={{
+        '--accent': roleAccent,
+        '--role-accent': roleAccent,
         '--chest-glow': accentInUse,
         '--open-crossfade': `${tweaks.openCrossfade ?? 450}ms`,
         '--shake-intensity': `${tweaks.shakeIntensity ?? 10}deg`,
       }}
     >
       <div className="tier-progress" aria-hidden="true">
-        <div className="tier-progress-fill" style={{ width: `${tierProgressPct}%` }} />
+        <div className="tier-progress-fill" style={{ width: `${tierProgressPct}%` }}>
+          <div className="tier-progress-shimmer" />
+        </div>
+        <div className="tier-progress-label">
+          {role.id === 'PROMDRILLS_CHRONICLES' ? (
+            <span className="tier-progress-max">MAX TIER ACHIEVED — TRY TO OPEN MYTHIC CHEST!</span>
+          ) : (
+            <>
+              <span>TIER PROGRESS</span>
+              {wordUnique.length > 0 && (
+                <span className="tier-progress-count">{collectedCount}/{wordUnique.length}</span>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       <header className="top-bar">
         {tweaks.connected && (
-          <div className="user-pill" ref={pillRef}>
-            <span className="user-name">@{(tweaks.username || 'EXPLORER').toUpperCase()}</span>
-            <span className="user-dot" aria-hidden="true" />
-            <span className="user-role">{role.label}</span>
+          <div className={`user-pill ${pillPulse > 0 ? 'is-bubble' : ''}`} ref={pillRef} key={pillPulse}>
+            <span className="user-pill-glow" aria-hidden="true" />
+            <span className="user-pill-name">{(tweaks.username || 'EXPLORER').toUpperCase()}</span>
+            <span className="user-pill-role">@{role.label}</span>
           </div>
         )}
-        <button
-          className={`map-toggle ${mapOpen ? 'is-open' : ''}`}
-          onClick={() => setMapOpen((o) => !o)}
-          aria-expanded={mapOpen}
-          aria-label="Roles and chests map"
-        >
-          <span className="caret" aria-hidden="true">▾</span>
-          <span>MAP</span>
-        </button>
       </header>
 
       {tweaks.connected && word && (
         <div className="letter-row">
-          <div className="letter-eyebrow">{word} · {collectedCount}/{wordUnique.length}</div>
+          <div className="letter-eyebrow">{word}</div>
           <div className="letter-slots">
             {letterSlots.map((s, i) => (
-              <span
-                key={i}
-                className={`letter-slot ${s.collected ? 'is-revealed' : ''} ${s.pulsing ? 'is-pulsing' : ''}`}
-              >
-                {s.collected ? s.ch : '—'}
-              </span>
+              <LetterGlyph key={i} ch={s.ch} revealed={s.collected} pulsing={s.pulsing} accent={roleAccent} />
             ))}
           </div>
+          <button
+            className={`map-toggle ${mapOpen ? 'is-open' : ''}`}
+            onClick={() => setMapOpen((o) => !o)}
+            aria-expanded={mapOpen}
+            aria-label="Roles and chests map"
+          >
+            <span className="map-toggle-dot" aria-hidden="true" />
+            MAP
+          </button>
         </div>
       )}
+
+      {!tweaks.connected || !word ? (
+        <div className="letter-row letter-row-empty">
+          <button
+            className={`map-toggle ${mapOpen ? 'is-open' : ''}`}
+            onClick={() => setMapOpen((o) => !o)}
+            aria-expanded={mapOpen}
+            aria-label="Roles and chests map"
+          >
+            <span className="map-toggle-dot" aria-hidden="true" />
+            MAP
+          </button>
+        </div>
+      ) : null}
 
       <div className="arena">
         <div className={ringClass} style={{ '--ring-angle': `${ringAngle}deg`, '--ring-z': ringZ }}>
@@ -576,11 +810,19 @@ function OneBox({ tweaks }) {
                   </div>
 
                   {showWinnerPrize && (
-                    /* Prize TEXT placeholder inside the chest mouth (replaces gem).
-                       BACKEND can swap this for a real prize image element later;
-                       the position + animation are agnostic to content. */
                     <div className="prize-text-mount" ref={prizeTextRef} style={{ '--gem-color': c.glow }}>
-                      <div className="prize-text-label">{c.prize}</div>
+                      <div className="prize-text-label">
+                        {isHiddenLetter && awardedLetter ? (
+                          <>
+                            <span className="prize-text-tag">LETTER</span>
+                            <span className="prize-letter-glyph">
+                              <LetterGlyph ch={awardedLetter} revealed accent={c.glow} />
+                            </span>
+                          </>
+                        ) : (
+                          <span className="prize-text-tag">{c.prize}</span>
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -591,26 +833,17 @@ function OneBox({ tweaks }) {
                         <span className="lock-body" />
                       </div>
                       <div className="lock-label">
-                        REQUIRES
-                        <b>{c.requires}</b>
+                        <span className="lock-label-top">UNLOCKS AT</span>
+                        <span className="lock-label-mid">{c.requires}</span>
+                        <span className="lock-label-bot">TIER</span>
                       </div>
                     </div>
                   )}
-
-                  {/* Always-visible gamified label, offset 10px left to align with chest's diagonal look */}
-                  <div className="chest-tag" style={{ '--c': c.glow }}>{c.label}</div>
                 </div>
               </div>
             );
           })}
         </div>
-
-        {showLockChip && (
-          <div className="lock-chip">
-            <span className="lock-chip-icon" aria-hidden="true" />
-            <span>UNLOCKS AT <b>{winnerChest.requires}</b> TIER</span>
-          </div>
-        )}
 
         {mapOpen && (
           <div className="map-overlay" onClick={() => setMapOpen(false)}>
@@ -632,6 +865,7 @@ function OneBox({ tweaks }) {
       </div>
 
       <div className="controls">
+        <SpeedBar current={speed.current} peak={speed.peak} active={isSpinningPhase} />
         <MainButton
           phase={renderPhase}
           connected={tweaks.connected}
