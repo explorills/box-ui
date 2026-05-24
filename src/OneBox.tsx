@@ -860,6 +860,29 @@ function OneBox({ tweaks }: { tweaks: any }) {
       </div>
 
       <header className="top-bar">
+        {/* Beta notice — overlaid in the top-bar's top band so it reads as
+            "below the tier bar, above the user pill" WITHOUT joining the grid
+            flow (position:absolute), so the 1fr arena keeps its full height.
+            pointer-events:none so it never intercepts the pill / map toggle. */}
+        <div className="box-beta-note" role="status">
+          <svg
+            className="box-beta-note-icon"
+            viewBox="0 0 24 24"
+            width="12"
+            height="12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M10 2v6.5L4.7 17.4A2 2 0 0 0 6.4 20.5h11.2a2 2 0 0 0 1.7-3.1L14 8.5V2" />
+            <path d="M8.5 2h7" />
+            <path d="M7 15h10" />
+          </svg>
+          <span>BETA · under active development — EXPL points &amp; accounts aren&apos;t live yet</span>
+        </div>
         {tweaks.connected && (
           <button
             type="button"
